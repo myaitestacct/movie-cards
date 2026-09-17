@@ -1,0 +1,187 @@
+/* ============================================
+   NAVBAR, SEARCH, SORT, VIEW TOGGLE, THEME
+   ============================================ */
+
+.navbar {
+    position: fixed;
+    top: 2px;
+    left: 10px;
+    right: 10px;
+    backdrop-filter: blur(18px);
+    z-index: 1000;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Search Input */
+#search-input {
+    background: rgba(0,0,0,0.4);
+    border: 0px solid var(--glass-border);
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    color: white;
+    outline: none;
+    width: 350px;
+    transition: 0.3s;
+    font-family: inherit;
+}
+
+#search-input:focus {
+    border-color: var(--accent);
+    width: 350px;
+}
+
+/* View Toggle Button */
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+}
+
+.view-toggle:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.view-toggle svg {
+    flex-shrink: 0;
+}
+
+.view-toggle-label {
+    white-space: nowrap;
+}
+
+/* Segmented Control (legacy - replaced by view toggle) */
+.segmented-control {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.seg-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.8rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+}
+
+.seg-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.seg-btn.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
+}
+
+.seg-btn svg {
+    flex-shrink: 0;
+}
+
+/* Sort Controls */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+#sort-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    padding: 0.5rem 2rem 0.5rem 0.8rem;
+    border-radius: 8px;
+    color: white;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.3s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+}
+
+#sort-select:focus {
+    border-color: var(--accent);
+}
+
+#sort-select:hover {
+    border-color: rgba(255,255,255,0.2);
+}
+
+#sort-select option {
+    background: #1a1a1a;
+    color: white;
+    padding: 0.5rem;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.theme-toggle:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+}

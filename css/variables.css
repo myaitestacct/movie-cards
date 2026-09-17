@@ -1,0 +1,50 @@
+/* ============================================
+   VARIABLES, RESET & BASE LAYOUT
+   ============================================ */
+
+:root {
+    --glass-bg: rgba(20, 20, 20, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --text-main: #ffffff;
+    --text-muted: #b3b3b3;
+    --accent: #e50914;
+    --badge-bg: rgba(229, 9, 20, 0.85);
+    --navbar-height: 70px;
+    --container-padding: 0.5rem;
+}
+
+* { margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background-color: #050505;
+    color: var(--text-main);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.background-blobs {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at 10% 20%, rgba(45, 45, 80, 0.4), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(100, 20, 20, 0.2), transparent 40%);
+    filter: blur(60px);
+    animation: pulse 10s infinite alternate;
+    pointer-events: none;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
+}

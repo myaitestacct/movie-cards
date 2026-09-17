@@ -1,0 +1,253 @@
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Tablet */
+@media (max-width: 1100px) {
+    .navbar {
+        left: 10px;
+        right: 10px;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    #search-input {
+        width: 100%;
+        min-width: 0;
+        order: -1;
+    }
+
+    #search-input:focus {
+        width: 100%;
+    }
+
+    #search-results-count {
+        margin-top: 70px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    /* Navbar */
+    .navbar {
+        left: 5px;
+        right: 5px;
+        top: 2px;
+        padding: 8px 10px;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    #search-input {
+        width: 100%;
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        order: -1;
+    }
+
+    #search-input:focus {
+        width: 100%;
+    }
+
+    /* Sort */
+    .sort-controls {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #sort-select {
+        width: 100%;
+        font-size: 0.8rem;
+        padding: 0.4rem 1.8rem 0.4rem 0.6rem;
+    }
+
+    .sort-label {
+        display: none;
+    }
+
+    .segmented-control {
+        flex: 0 0 auto;
+    }
+
+    /* Search Results */
+    #search-results-count {
+        margin-top: 110px;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    /* Collapsible */
+    .collapsible-bar {
+        margin: 0 5px;
+    }
+
+    /* Genre Chips */
+    .genre-filters {
+        padding: 0.4rem 0.5rem;
+        gap: 6px;
+    }
+
+    .genre-chip {
+        padding: 5px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Container */
+    .container {
+        margin: 0 5px 5px;
+        padding: 0.3rem;
+        padding-top: 30px;
+    }
+
+    /* Grid */
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.6rem;
+    }
+
+    .movie-card img {
+        height: 220px;
+    }
+
+    /* Back to Top */
+    .back-to-top-btn {
+        bottom: 15px;
+        right: 15px;
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Modal */
+    dialog {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+        max-height: 100vh;
+    }
+
+    .modal-content-row {
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-header-top h2 {
+        font-size: 1.5rem;
+    }
+
+    .modal-img {
+        width: 100%;
+        max-width: 280px;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-poster-wrapper {
+        flex: none;
+        position: static;
+    }
+
+    .modal-details {
+        padding-right: 0;
+    }
+
+    .tech-row-inline {
+        justify-content: center;
+    }
+
+    /* Table */
+    .movie-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    /* Stats */
+    .stats-bar {
+        gap: 1rem;
+        padding: 0.5rem 0.8rem;
+        margin: 4px 0;
+    }
+
+    .stat-value {
+        font-size: 0.85rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+    }
+
+    .stat-divider {
+        height: 24px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 400px) {
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .movie-card img {
+        height: 180px;
+    }
+
+    .card-info {
+        padding: 0.5rem;
+    }
+
+    .card-title {
+        font-size: 0.85rem;
+    }
+
+    .card-meta {
+        font-size: 0.7rem;
+    }
+
+    /* Advanced Filters Panel */
+    .adv-filters-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .adv-filters-header {
+        padding: 1rem;
+    }
+
+    .adv-filters-body {
+        padding: 1rem;
+    }
+
+    .adv-filters-footer {
+        padding: 1rem;
+    }
+
+    .filter-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-separator {
+        display: none;
+    }
+
+    .filter-checkboxes {
+        gap: 6px;
+    }
+
+    .checkbox-label {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+    }
+}

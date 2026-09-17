@@ -1,0 +1,61 @@
+/* ============================================
+   TABLE VIEW & TABLE POSTER PREVIEW
+   ============================================ */
+
+.movie-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.movie-table th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--glass-border);
+    font-weight: 400;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    background: var(--glass-bg);
+    z-index: 10;
+}
+
+.movie-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.movie-table tr:hover {
+    background: rgba(255,255,255,0.05);
+    cursor: pointer;
+}
+
+.table-poster {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* Table Poster Preview on Hover */
+.table-poster-preview {
+    position: fixed;
+    width: 200px;
+    height: 300px;
+    z-index: 9999;
+    pointer-events: none;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: tablePreviewIn 0.2s ease forwards;
+    background: #1a1a1a;
+}
+
+.table-poster-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}

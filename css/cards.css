@@ -1,0 +1,376 @@
+/* ============================================
+   MOVIE GRID, CARDS, POSTERS, BADGES
+   ============================================ */
+
+/* Grid View */
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--poster-min-width, 175px), 1fr));
+    gap: 1rem;
+    padding-bottom: 2rem;
+}
+
+.movie-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+}
+
+.movie-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 22px 50px rgba(0,0,0,0.7);
+}
+
+.movie-card img {
+    width: 100%;
+    height: 330px;
+    object-fit: cover;
+    display: block;
+    border-radius: 10px;
+    transition: transform 0.45s ease;
+}
+
+.movie-card:hover img {
+    transform: scale(1.08);
+}
+
+/* Hover Info Overlay */
+.hover-info {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    max-height: 75%;
+    overflow: hidden;
+}
+
+.movie-card:hover .hover-info {
+    opacity: 1;
+}
+
+/* Poster Wrapper & Loading Shimmer */
+.poster-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: var(--poster-aspect-ratio, 175%);
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.poster-wrapper.loading {
+    background: linear-gradient(
+        110deg,
+        rgba(255,255,255,0.03) 8%,
+        rgba(255,255,255,0.08) 18%,
+        rgba(255,255,255,0.03) 33%
+    );
+    background-size: 200% 100%;
+    animation: shimmerPoster 1.4s infinite;
+}
+
+.poster-wrapper.loading img {
+    opacity: 0;
+}
+
+.poster-wrapper.loaded img {
+    opacity: 1;
+}
+
+/* Cinematic Poster Glow */
+.poster-glow {
+    position: absolute;
+    inset: -12px;
+    z-index: 0;
+    filter: blur(28px);
+    opacity: 0.55;
+    border-radius: 14px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.poster-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.movie-card:hover .poster-glow {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Movie Badges */
+.movie-badge {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--badge-bg);
+    color: var(--text-main);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    z-index: 3;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: auto;
+}
+
+.movie-card:hover .movie-badge {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.movie-badge:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 10px rgba(229,9,20,0.7);
+}
+
+/* Badge Positions */
+.badge-cert { top: 8px; left: 8px; }
+.badge-length { top: 8px; right: 8px; }
+.badge-rating { bottom: 8px; left: 8px; }
+.badge-year { bottom: 8px; right: 8px; }
+
+.movie-badge.badge-source {
+    position: absolute;
+    top: 40px;
+    right: 160px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    font-weight: 600;
+    transform: rotate(45deg);
+    transform-origin: top left;
+}
+
+/* Card Info */
+.card-info {
+    padding: 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.rating-badge {
+    background: rgba(229, 9, 20, 0.2);
+    color: #ff6b6b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border: 1px solid rgba(229, 9, 20, 0.4);
+    transition: 0.2s;
+}
+
+/* NUM Badges */
+.num-badge {
+    display: inline-block;
+    background: rgba(229, 9, 20, 0.15);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    border: 1px solid rgba(229, 9, 20, 0.3);
+}
+
+.num-cell {
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 45px;
+    text-align: center;
+}
+
+/* Hover Preview */
+.poster-preview {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
+    opacity: 0;
+    transition: opacity .25s;
+}
+
+.movie-card:hover .poster-preview {
+    opacity: 1;
+}
+
+.preview-title {
+    font-weight: 600;
+    font-size: .85rem;
+}
+
+.preview-meta {
+    font-size: .75rem;
+    opacity: .8;
+}
+
+.hover-preview {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px;
+    background: linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.75) 45%, rgba(0,0,0,0) 100%);
+    color: white;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .25s ease;
+    pointer-events: none;
+    font-size: .8rem;
+    line-height: 1.35;
+}
+
+.poster-wrapper:hover .hover-preview {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.preview-top {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.preview-genre {
+    color: #d0d0d0;
+    margin-bottom: 6px;
+}
+
+.preview-desc {
+    color: #b8b8b8;
+    font-size: .75rem;
+}
+
+/* Favorite Heart Button */
+.fav-btn {
+    position: absolute;
+    top: 40px;
+    right: 2px;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    opacity: 0;
+    transform: scale(0.8);
+    padding: 0;
+    line-height: 1;
+}
+
+.movie-card:hover .fav-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.fav-btn:hover {
+    background: rgba(229, 9, 20, 0.8);
+    color: white;
+    border-color: var(--accent);
+    transform: scale(1.15);
+}
+
+.fav-btn.active {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px rgba(229, 9, 20, 0.5);
+}
+
+.fav-btn.active:hover {
+    background: #ff1f2b;
+    transform: scale(1.15);
+}
+
+td .fav-btn {
+    position: static;
+    opacity: 1;
+    transform: scale(1);
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+}
+
+/* Keyboard Focus Indicator */
+.movie-card:focus,
+.movie-card.card-focused {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 22px 50px rgba(0,0,0,0.7);
+}
+
+.movie-card:focus .poster-glow,
+.movie-card.card-focused .poster-glow {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Table Row Focus */
+.movie-table tbody tr:focus,
+.movie-table tbody tr.card-focused {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    background: rgba(229, 9, 20, 0.1);
+}
+
+/* Genre Chip Focus */
+.genre-chip:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}

@@ -1,0 +1,41 @@
+/* ============================================
+   MAIN CONTENT CONTAINER & SCROLLBARS
+   ============================================ */
+
+.container {
+    flex: 1;
+    margin: 0 10px 10px;
+    padding: var(--container-padding);
+    padding-top: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: calc(100vh - var(--navbar-height) - 40px);
+    scroll-behavior: smooth;
+}
+
+.container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.container::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
+}
+
+.container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+}
+
+.container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Search Results Count */
+#search-results-count {
+    margin-top: 40px;
+    padding: 0.5rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
