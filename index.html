@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhilam's Movie Library</title>
+
+    <!-- CSS (order matters: base → components → theme → responsive) -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/container.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/table.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/lightbox.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/theme-light.css">
+    <link rel="stylesheet" href="css/responsive.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Background Ambience -->
+    <div class="background-blobs"></div>
+
+    <!-- Navigation -->
+    <nav class="glass-panel navbar">
+        <div class="controls">
+            <input type="text" id="search-input" placeholder="Search title, director, actors, year, genre..." autocomplete="off">
+            <div class="sort-controls">
+                <label for="sort-select" class="sort-label">Sort:</label>
+                <select id="sort-select">
+                    <option value="num_asc" selected># (Default)</option>
+                    <option value="title_asc">Title A→Z</option>
+                    <option value="title_desc">Title Z→A</option>
+                    <option value="year_desc">Year (Newest)</option>
+                    <option value="year_asc">Year (Oldest)</option>
+                    <option value="rating_desc">Rating (Highest)</option>
+                    <option value="rating_asc">Rating (Lowest)</option>
+                </select>
+            </div>
+            <button id="btn-view-toggle" class="view-toggle" title="Toggle Grid/List view (Grid default)">
+                <svg class="icon-grid" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <svg class="icon-list" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span class="view-toggle-label">Grid</span>
+            </button>
+            <div class="poster-size-control" id="poster-size-control" title="Adjust poster size">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <input type="range" id="poster-size-slider" min="120" max="300" value="200" step="10">
+            </div>
+            <button id="btn-advanced-filters" class="adv-filters-toggle" title="Advanced filters">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span class="adv-filters-label">Filters</span>
+                <span id="adv-filters-count" class="adv-filters-count" style="display:none;">0</span>
+            </button>
+            <button id="btn-theme" class="theme-toggle" title="Toggle light/dark theme">
+                <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                </svg>
+                <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Advanced Filters Panel -->
+    <div id="advanced-filters-panel" class="adv-filters-panel">
+        <div class="adv-filters-header">
+            <h3>Advanced Filters</h3>
+            <button id="adv-filters-close" class="adv-filters-close">&times;</button>
+        </div>
+        <div class="adv-filters-body">
+            <!-- Year Range -->
+            <div class="filter-group">
+                <label class="filter-label">Year Range</label>
+                <div class="filter-row">
+                    <input type="number" id="filter-year-from" class="filter-input" placeholder="From" min="1900" max="2099">
+                    <span class="filter-separator">—</span>
+                    <input type="number" id="filter-year-to" class="filter-input" placeholder="To" min="1900" max="2099">
+                </div>
+            </div>
+
+            <!-- Rating Range -->
+            <div class="filter-group">
+                <label class="filter-label">Rating Range</label>
+                <div class="filter-row">
+                    <input type="number" id="filter-rating-from" class="filter-input" placeholder="Min" min="0" max="10" step="0.1">
+                    <span class="filter-separator">—</span>
+                    <input type="number" id="filter-rating-to" class="filter-input" placeholder="Max" min="0" max="10" step="0.1">
+                </div>
+            </div>
+
+            <!-- Resolution -->
+            <div class="filter-group">
+                <label class="filter-label">Resolution</label>
+                <div class="filter-checkboxes">
+                    <label class="checkbox-label"><input type="checkbox" class="filter-resolution" value="480"> 480p</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-resolution" value="720"> 720p</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-resolution" value="1080"> 1080p</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-resolution" value="2160"> 4K</label>
+                </div>
+            </div>
+
+            <!-- Audio Format -->
+            <div class="filter-group">
+                <label class="filter-label">Audio Format</label>
+                <div class="filter-checkboxes">
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="DTS"> DTS</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="AC3"> AC3</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="AAC"> AAC</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="FLAC"> FLAC</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="TrueHD"> TrueHD</label>
+                </div>
+            </div>
+
+            <!-- Country -->
+            <div class="filter-group">
+                <label class="filter-label">Country</label>
+                <input type="text" id="filter-country" class="filter-input-full" placeholder="e.g., USA, UK, India...">
+            </div>
+
+            <!-- Director -->
+            <div class="filter-group">
+                <label class="filter-label">Director</label>
+                <input type="text" id="filter-director" class="filter-input-full" placeholder="e.g., Christopher Nolan...">
+            </div>
+
+            <!-- Actors -->
+            <div class="filter-group">
+                <label class="filter-label">Actors</label>
+                <input type="text" id="filter-actors" class="filter-input-full" placeholder="e.g., Leonardo DiCaprio...">
+            </div>
+
+            <!-- File Size Range -->
+            <div class="filter-group">
+                <label class="filter-label">File Size (MB)</label>
+                <div class="filter-row">
+                    <input type="number" id="filter-size-from" class="filter-input" placeholder="Min" min="0" step="1">
+                    <span class="filter-separator">—</span>
+                    <input type="number" id="filter-size-to" class="filter-input" placeholder="Max" min="0" step="1">
+                </div>
+            </div>
+
+            <!-- Certification -->
+            <div class="filter-group">
+                <label class="filter-label">Certification</label>
+                <div class="filter-checkboxes">
+                    <label class="checkbox-label"><input type="checkbox" class="filter-cert" value="G"> G</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-cert" value="PG"> PG</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-cert" value="PG-13"> PG-13</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-cert" value="R"> R</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-cert" value="NC-17"> NC-17</label>
+                </div>
+            </div>
+        </div>
+        <div class="adv-filters-footer">
+            <button id="adv-filters-clear" class="adv-filters-btn-secondary">Clear All</button>
+            <button id="adv-filters-apply" class="adv-filters-btn-primary">Apply Filters</button>
+        </div>
+    </div>
+
+    <div id="search-results-count" class="results-count"></div>
+
+    <!-- Breadcrumb Navigation -->
+    <div id="breadcrumb" class="breadcrumb"></div>
+
+    <!-- Genre Filter Chips -->
+    <div class="collapsible-bar" id="genre-bar">
+        <button class="collapse-toggle" id="genre-collapse-btn" title="Toggle genres">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div id="genre-filters" class="genre-filters">
+            <!-- Chips injected via JS -->
+        </div>
+    </div>
+
+    <!-- Stats Dashboard -->
+    <div class="collapsible-bar" id="stats-wrapper">
+        <button class="collapse-toggle" id="stats-collapse-btn" title="Toggle stats">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div id="stats-bar" class="stats-bar">
+            <!-- Stats injected via JS -->
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main id="content-area" class="glass-panel container">
+        <!-- Content injected via DOM -->
+    </main>
+
+    <!-- Details Modal -->
+    <dialog id="movie-modal" class="glass-panel">
+        <div id="poster-lightbox" class="poster-lightbox">
+            <div class="lightbox-controls">
+                <button class="lightbox-btn zoom-in-btn" title="Zoom in">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="11" y1="8" x2="11" y2="14"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </button>
+                <button class="lightbox-btn zoom-out-btn" title="Zoom out">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </button>
+                <button class="lightbox-btn zoom-reset-btn" title="Reset zoom">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <polyline points="23 20 23 14 17 14"></polyline>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                    </svg>
+                </button>
+                <button class="lightbox-btn zoom-full-btn" title="Full size">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </button>
+            </div>
+            <span class="close-lightbox">&times;</span>
+            <img class="lightbox-img" src="" alt="Full Poster">
+        </div>
+        <div class="modal-content">
+            <button class="close-btn" id="close-modal">×</button>
+            <div id="modal-body">
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- JS (order matters: state → utilities → modules → app) -->
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/favorites.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/advanced-filters.js"></script>
+    <script src="js/keyboard-nav.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/modal.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
