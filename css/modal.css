@@ -143,9 +143,7 @@ dialog[open] { animation: modalZoom 0.35s ease forwards; }
 
 .tech-row-inline { display: flex; gap: 2rem; flex-wrap: wrap; }
 .tech-item { display: flex; gap: 0.4rem; font-size: 0.95rem; }
-.tech-label { color: var(--accent); font-weight: 600; }
 .tech-value { color: #ccc; }
-.tech-file { font-family: monospace; font-size: 0.85rem; color: #aaa; word-break: break-all; }
 
 .tech-icon {
     stroke: var(--accent);
@@ -161,7 +159,6 @@ dialog[open] .tech-icon { animation: iconPulse 2.8s ease-in-out infinite; }
 
 .tech-file-wrapper { margin-top: 0; display: flex; flex-direction: column; gap: 6px; }
 .tech-file-row { align-items: center; }
-.tech-path-row .tech-path { color: #aaa; font-size: 0.85rem; font-family: monospace; overflow-x: auto; white-space: nowrap; }
 
 .tech-file-name { font-size: 0.9rem; color: #fff; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -213,9 +210,6 @@ dialog[open] .tech-icon { animation: iconPulse 2.8s ease-in-out infinite; }
     white-space: nowrap;
     animation: badgePulse 1.8s infinite alternate;
 }
-
-.cert-badge-rect { stroke: currentColor; fill: rgba(229, 9, 20, 0.15); stroke-width: 2; }
-.cert-badge-text { fill: currentColor; font-size: 12px; font-weight: 700; font-family: 'Poppins', sans-serif; pointer-events: none; }
 
 dialog.closing { animation: modalClose 0.28s ease forwards; }
 

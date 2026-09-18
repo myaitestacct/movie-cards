@@ -34,6 +34,10 @@ function getPosterGlow(img, glowEl) {
 
 // --- Render Grid ---
 function renderGrid(movies, append = false) {
+    // A fresh render invalidates the focused-card index tracked by
+    // keyboard-nav.js (resetCardFocus is guarded so render.js stays standalone).
+    if (!append && typeof resetCardFocus === 'function') resetCardFocus();
+
     let grid = contentArea.querySelector('.movie-grid');
 
     if (!grid || !append) {
@@ -187,6 +191,9 @@ function renderGrid(movies, append = false) {
 
 // --- Render Table ---
 function renderTable(movies, append = false) {
+    // See renderGrid(): reset the focused-card index on a fresh render
+    if (!append && typeof resetCardFocus === 'function') resetCardFocus();
+
     let table = contentArea.querySelector('.movie-table');
     let tbody = table ? table.querySelector('tbody') : null;
 

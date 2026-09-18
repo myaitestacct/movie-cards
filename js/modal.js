@@ -8,7 +8,13 @@ function openModal(movie) {
 
     // Modal header
     const header = createElement('div', 'modal-header');
-    header.style.backgroundImage = `url(${movie.poster})`;
+    // Escape the characters that could terminate the url("...") string - the
+    // poster path comes from the database, not from a trusted literal. Quoting
+    // the URL makes every other character (spaces, commas, parentheses) safe.
+    const posterUrl = String(movie.poster || '').replace(/[\\"\r\n]/g, encodeURIComponent);
+    if (posterUrl) {
+        header.style.backgroundImage = `url("${posterUrl}")`;
+    }
 
     // Header top row
     const headerTop = createElement('div', 'modal-header-top');
@@ -53,15 +59,6 @@ function openModal(movie) {
     });
 
     posterWrapper.appendChild(posterImg);
-
-    // Fetch poster button
-    const fetchPosterBtn = createElement('button', 'fetch-poster-btn', '🔍 Fetch Poster');
-    fetchPosterBtn.title = 'Fetch poster from OMDB';
-    fetchPosterBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fetchPosterFromOMDB(movie.num, posterImg);
-    });
-    posterWrapper.appendChild(fetchPosterBtn);
 
     if (movie.certification) {
         const badge = createCertificationBadge(movie.certification);
@@ -324,59 +321,3 @@ closeLightboxBtn.addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', e => {
     if (e.target === lightbox) closeLightbox();
 });
-
-// ============================================
-// OMDB API Integration
-// ============================================
-
-function fetchPosterFromOMDB(movieNum, posterImg) {
-    showToast('Fetching poster from OMDB...', 'info');
-    
-    fetch(`omdb-api.php?action=fetch_poster&num=${movieNum}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('✓ Poster updated successfully!', 'success');
-                // Update the poster image in modal
-                posterImg.src = data.poster;
-                // Update the poster in the current movie object
-                const currentMovie = Array.from(document.querySelectorAll('.movie-card')).find(card => card.dataset.num == movieNum);
-                if (currentMovie) {
-                    const cardImg = currentMovie.querySelector('img');
-                    if (cardImg) cardImg.src = data.poster;
-                }
-                // Refresh the grid to show updated poster
-                setTimeout(() => fetchMovies(searchInput.value, 0, false), 1000);
-            } else {
-                showToast(data.message || 'No poster found in OMDB', 'warning');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching poster:', error);
-            showToast('Error fetching poster from OMDB', 'error');
-        });
-}
-
-function bulkFetchPostersFromOMDB() {
-    if (!confirm('This will fetch posters for up to 50 movies with missing posters. Continue?')) {
-        return;
-    }
-    
-    showToast('Fetching posters from OMDB... This may take a minute.', 'info');
-    
-    fetch('omdb-api.php?action=bulk_fetch_posters&limit=50')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast(`✓ Processed ${data.processed} movies: ${data.successCount} updated, ${data.failCount} not found`, 'success', 5000);
-                // Refresh the grid to show updated posters
-                setTimeout(() => fetchMovies(searchInput.value, 0, false), 1500);
-            } else {
-                showToast('Error during bulk fetch', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error in bulk fetch:', error);
-            showToast('Error during bulk fetch', 'error');
-        });
-}

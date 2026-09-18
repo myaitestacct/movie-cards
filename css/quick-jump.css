@@ -1,0 +1,175 @@
+/* ============================================
+   QUICK JUMP PANEL (jump by number/letter/decade)
+
+   The panel chrome (header, close button, body,
+   footer) is reused from the advanced filters
+   panel in components.css - only the jump-specific
+   controls are styled here.
+   ============================================ */
+
+.quick-jump-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    max-width: 90vw;
+    height: 100vh;
+    background: #1a1a1a;
+    border-left: 1px solid var(--glass-border);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.3s ease;
+}
+
+.quick-jump-panel.open {
+    right: 0;
+}
+
+/* Tabs */
+.qj-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.qj-tab-btn {
+    flex: 1;
+    justify-content: center;
+}
+
+/* One tab panel visible at a time */
+.qj-tab-panel {
+    display: none;
+}
+
+.qj-tab-panel.active {
+    display: block;
+}
+
+/* Number input + Go button */
+.qj-go-btn {
+    flex: 0 0 auto;
+}
+
+/* Letter grid */
+.qj-letter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 6px;
+}
+
+/* Decade grid */
+.qj-decade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 6px;
+}
+
+/* Letter + decade buttons */
+.jump-letter-btn,
+.jump-decade-btn {
+    padding: 0.5rem 0.4rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.jump-letter-btn:hover,
+.jump-decade-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.jump-letter-btn:focus-visible,
+.jump-decade-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.jump-letter-btn:disabled,
+.jump-decade-btn:disabled {
+    opacity: 0.5;
+    cursor: progress;
+}
+
+/* Status lines */
+.jump-status {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    min-height: 1.1em;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.jump-status.success {
+    color: #4ade80;
+}
+
+.jump-status.error {
+    color: #ff6b6b;
+}
+
+/* Footer */
+.qj-footer {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.qj-footer .jump-status {
+    margin-top: 0;
+}
+
+.qj-info strong {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* Light theme */
+body.light-theme .quick-jump-panel {
+    background: #ffffff;
+    border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .jump-letter-btn,
+body.light-theme .jump-decade-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #666;
+}
+
+body.light-theme .jump-letter-btn:hover,
+body.light-theme .jump-decade-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1a1a1a;
+}
+
+body.light-theme .jump-status.success {
+    color: #15803d;
+}
+
+body.light-theme .jump-status.error {
+    color: #b91c1c;
+}
+
+/* Small screens */
+@media (max-width: 400px) {
+    .quick-jump-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+}

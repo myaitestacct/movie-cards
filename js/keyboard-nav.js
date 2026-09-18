@@ -179,7 +179,7 @@ document.addEventListener('keydown', e => {
     // --- Escape to close advanced filters ---
     if (e.key === 'Escape' && isAdvPanelOpen) {
         e.preventDefault();
-        advPanel.classList.remove('open');
+        handleAdvancedFiltersEscape();
         return;
     }
 
@@ -229,32 +229,15 @@ document.addEventListener('keydown', e => {
     if (e.key === 'a' && !isSearchFocused && !isModalOpen &&
         document.activeElement !== sortSelect) {
         e.preventDefault();
-        const panel = document.getElementById('advanced-filters-panel');
-        if (panel) panel.classList.toggle('open');
+        toggleAdvancedFiltersPanel();
         return;
     }
 });
 
 // --- Reset card focus when new content loads ---
-// We hook into the render functions
-const origRenderGrid = typeof renderGrid === 'function' ? renderGrid : null;
-const origRenderTable = typeof renderTable === 'function' ? renderTable : null;
-
-// Override renderGrid to reset focus
-if (origRenderGrid) {
-    renderGrid = function(movies, append) {
-        if (!append) resetCardFocus();
-        origRenderGrid(movies, append);
-    };
-}
-
-// Override renderTable to reset focus
-if (origRenderTable) {
-    renderTable = function(movies, append) {
-        if (!append) resetCardFocus();
-        origRenderTable(movies, append);
-    };
-}
+// resetCardFocus() is called by renderGrid()/renderTable() in render.js on every
+// fresh render. (Wrapping those functions from here never worked: this file is
+// loaded before render.js, so they did not exist yet when the wrappers were built.)
 
 // --- Click on card updates focus index ---
 document.addEventListener('click', e => {
