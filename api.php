@@ -6,8 +6,8 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
+// Same-origin only: the frontend calls this endpoint with relative URLs,
+// so no Access-Control-Allow-* headers are sent on purpose.
 
 // ===== LOAD DATABASE CONFIGURATION =====
 $config = require __DIR__ . '/config.php';
@@ -20,12 +20,18 @@ $charset = $config['charset'];
 $table = $config['table'];
 
 // ===== POSTER PATH CONFIGURATION =====
-$posterBasePath = '../movies/antexport/';
-$posterBaseUrl = '/movies/antexport/';
+// "path" is checked with file_exists(), "url" is what the browser loads.
+$posterConfig = [
+    'movies'    => ['path' => '../movies/antexport/',          'url' => '/movies/antexport/'],
+    'paripakva' => ['path' => '../movies_template/paripakva/', 'url' => '/movies_template/paripakva/'],
+];
 $noPosterFileName = 'movies_0000-coming_soon.jpg';
-$paripakvaPosterBasePath = '../movies_template/paripakva/';
-$paripakvaPosterBaseUrl = '/movies_template/paripakva/';
 // ====================================
+
+// ===== MOVIE COLUMNS (shared by every SELECT below) =====
+$movieColumns = 'NUM, FORMATTEDTITLE, YEAR, CATEGORY, RATING, USERRATING, DESCRIPTION, '
+    . 'CERTIFICATION, DIRECTOR, ACTORS, URL, PICTURENAME, LENGTH, COUNTRY, '
+    . 'RESOLUTION, AUDIOFORMAT, FILESIZE, FILEPATH';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 
@@ -43,19 +49,23 @@ try {
     exit;
 }
 
+// ===== SOURCE TABLE (whitelisted, shared by every query) =====
+$useParipakva = isset($_GET['archive']) && $_GET['archive'] == 1;
+$allowedTables = [$table, 'paripakva'];
+$tableToQuery = resolveMovieTable($table, $useParipakva, $allowedTables);
+
+if ($tableToQuery === null) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid table']);
+    exit;
+}
+
 // ===== HANDLE SPECIAL ACTIONS =====
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
 
 if ($action === 'categories') {
-    $catTable = (isset($_GET['archive']) && $_GET['archive'] == 1) ? 'paripakva' : $table;
-    $allowedCatTables = [$table, 'paripakva'];
-    if (!in_array($catTable, $allowedCatTables, true)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid table']);
-        exit;
-    }
     try {
-        $catStmt = $pdo->prepare("SELECT DISTINCT CATEGORY FROM $catTable WHERE CATEGORY IS NOT NULL AND CATEGORY != '' ORDER BY CATEGORY ASC");
+        $catStmt = $pdo->prepare("SELECT DISTINCT CATEGORY FROM $tableToQuery WHERE CATEGORY IS NOT NULL AND CATEGORY != '' ORDER BY CATEGORY ASC");
         $catStmt->execute();
         $categories = array_column($catStmt->fetchAll(), 'CATEGORY');
         echo json_encode(['categories' => $categories]);
@@ -67,33 +77,26 @@ if ($action === 'categories') {
 }
 
 if ($action === 'stats') {
-    $statsTable = (isset($_GET['archive']) && $_GET['archive'] == 1) ? 'paripakva' : $table;
-    $allowedStatsTables = [$table, 'paripakva'];
-    if (!in_array($statsTable, $allowedStatsTables, true)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid table']);
-        exit;
-    }
     try {
         // Total movies
-        $totalStmt = $pdo->prepare("SELECT COUNT(*) as total FROM $statsTable");
+        $totalStmt = $pdo->prepare("SELECT COUNT(*) as total FROM $tableToQuery");
         $totalStmt->execute();
         $totalMovies = $totalStmt->fetch()['total'] ?? 0;
 
         // Average rating
-        $avgStmt = $pdo->prepare("SELECT AVG(COALESCE(NULLIF(USERRATING, ''), RATING)) as avg_rating FROM $statsTable WHERE COALESCE(NULLIF(USERRATING, ''), RATING) IS NOT NULL AND COALESCE(NULLIF(USERRATING, ''), RATING) > 0");
+        $avgStmt = $pdo->prepare("SELECT AVG(COALESCE(NULLIF(USERRATING, ''), RATING)) as avg_rating FROM $tableToQuery WHERE COALESCE(NULLIF(USERRATING, ''), RATING) IS NOT NULL AND COALESCE(NULLIF(USERRATING, ''), RATING) > 0");
         $avgStmt->execute();
         $avgRating = round($avgStmt->fetch()['avg_rating'] ?? 0, 1);
 
         // Most common genre
-        $genreStmt = $pdo->prepare("SELECT CATEGORY, COUNT(*) as cnt FROM $statsTable WHERE CATEGORY IS NOT NULL AND CATEGORY != '' GROUP BY CATEGORY ORDER BY cnt DESC LIMIT 1");
+        $genreStmt = $pdo->prepare("SELECT CATEGORY, COUNT(*) as cnt FROM $tableToQuery WHERE CATEGORY IS NOT NULL AND CATEGORY != '' GROUP BY CATEGORY ORDER BY cnt DESC LIMIT 1");
         $genreStmt->execute();
         $topGenreRow = $genreStmt->fetch();
         $topGenre = $topGenreRow ? $topGenreRow['CATEGORY'] : 'N/A';
         $topGenreCount = $topGenreRow ? $topGenreRow['cnt'] : 0;
 
         // Total runtime (calculate from LENGTH field)
-        $runtimeStmt = $pdo->prepare("SELECT LENGTH FROM $statsTable WHERE LENGTH IS NOT NULL AND LENGTH != ''");
+        $runtimeStmt = $pdo->prepare("SELECT LENGTH FROM $tableToQuery WHERE LENGTH IS NOT NULL AND LENGTH != ''");
         $runtimeStmt->execute();
         $totalMinutes = 0;
         while ($row = $runtimeStmt->fetch()) {
@@ -153,6 +156,131 @@ if ($action === 'stats') {
     exit;
 }
 
+// ===== QUICK JUMP ACTIONS =====
+
+// Jump to a single movie by its NUM
+if ($action === 'get_movie_by_num') {
+    $num = isset($_GET['num']) ? (int)$_GET['num'] : 0;
+
+    if ($num <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid movie number']);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT $movieColumns FROM $tableToQuery WHERE NUM = :num LIMIT 1");
+        $stmt->bindValue(':num', $num, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => "No movie #$num found"]);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'movie' => mapMovieRow($row, $useParipakva, $posterConfig, $noPosterFileName),
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Query failed']);
+    }
+    exit;
+}
+
+// Jump to movies whose title starts with a letter ("#" or "[0-9]" = any digit)
+if ($action === 'get_movies_by_letter') {
+    $letter = isset($_GET['letter']) ? trim($_GET['letter']) : '';
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $limit = max(1, min($limit, 100));
+
+    if ($letter === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing letter']);
+        exit;
+    }
+
+    $digitsOnly = ($letter === '#' || $letter === '[0-9]');
+
+    try {
+        if ($digitsOnly) {
+            // MySQL LIKE has no character classes, so digits need REGEXP
+            $stmt = $pdo->prepare("SELECT $movieColumns FROM $tableToQuery
+                                   WHERE FORMATTEDTITLE IS NOT NULL AND FORMATTEDTITLE REGEXP '^[0-9]'
+                                   ORDER BY FORMATTEDTITLE ASC
+                                   LIMIT :limit");
+        } else {
+            $stmt = $pdo->prepare("SELECT $movieColumns FROM $tableToQuery
+                                   WHERE FORMATTEDTITLE IS NOT NULL AND FORMATTEDTITLE LIKE :pattern
+                                   ORDER BY FORMATTEDTITLE ASC
+                                   LIMIT :limit");
+            $stmt->bindValue(':pattern', escapeLike($letter) . '%', PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $movies = array_map(function ($row) use ($useParipakva, $posterConfig, $noPosterFileName) {
+            return mapMovieRow($row, $useParipakva, $posterConfig, $noPosterFileName);
+        }, $stmt->fetchAll());
+
+        echo json_encode([
+            'success' => true,
+            'letter' => $digitsOnly ? '#' : $letter,
+            'count' => count($movies),
+            'movies' => $movies,
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Query failed']);
+    }
+    exit;
+}
+
+// Jump to movies released in a decade ("from" and "to" are both inclusive)
+if ($action === 'get_movies_by_decade') {
+    $from = isset($_GET['from']) ? (int)$_GET['from'] : 0;
+    $to   = isset($_GET['to']) ? (int)$_GET['to'] : 0;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $limit = max(1, min($limit, 100));
+
+    if ($from < 1000 || $to < $from) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid year range']);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT $movieColumns FROM $tableToQuery
+                               WHERE CAST(YEAR AS UNSIGNED) BETWEEN :from AND :to
+                               ORDER BY CAST(YEAR AS UNSIGNED) ASC, FORMATTEDTITLE ASC
+                               LIMIT :limit");
+        $stmt->bindValue(':from', $from, PDO::PARAM_INT);
+        $stmt->bindValue(':to', $to, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $movies = array_map(function ($row) use ($useParipakva, $posterConfig, $noPosterFileName) {
+            return mapMovieRow($row, $useParipakva, $posterConfig, $noPosterFileName);
+        }, $stmt->fetchAll());
+
+        echo json_encode([
+            'success' => true,
+            'from' => $from,
+            'to' => $to,
+            'count' => count($movies),
+            'movies' => $movies,
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Query failed']);
+    }
+    exit;
+}
+// ================================
+
 // ===== PAGINATION PARAMETERS =====
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
@@ -178,18 +306,6 @@ $certificationsParam = isset($_GET['certifications']) ? trim($_GET['certificatio
 $resolutions = $resolutionsParam ? array_filter(array_map('trim', explode(',', $resolutionsParam))) : [];
 $audioFormats = $audioParam ? array_filter(array_map('trim', explode(',', $audioParam))) : [];
 $certifications = $certificationsParam ? array_filter(array_map('trim', explode(',', $certificationsParam))) : [];
-
-// Determine source table (whitelist allowed table names)
-$useParipakva = isset($_GET['archive']) && $_GET['archive'] == 1;
-$allowedTables = [$table, 'paripakva'];
-$tableToQuery = $useParipakva ? 'paripakva' : $table;
-
-// Validate table name is in whitelist
-if (!in_array($tableToQuery, $allowedTables, true)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid table']);
-    exit;
-}
 
 // Cap limit to prevent abuse
 $limit = min($limit, 100);
@@ -221,7 +337,9 @@ if (!array_key_exists($sort, $allowedSorts)) {
 $orderBy = $allowedSorts[$sort];
 
 // Build query with pagination
-$conditions = ["(FORMATTEDTITLE LIKE :search1 OR CATEGORY LIKE :search2 OR DIRECTOR LIKE :search3 OR ACTORS LIKE :search4 OR CAST(YEAR AS CHAR) LIKE :search5)"];
+// COALESCE every searchable column: NULL LIKE '%' is NULL (not true), so without
+// it any row with an empty title/category would vanish even with no search term.
+$conditions = ["(COALESCE(FORMATTEDTITLE, '') LIKE :search1 OR COALESCE(CATEGORY, '') LIKE :search2 OR COALESCE(DIRECTOR, '') LIKE :search3 OR COALESCE(ACTORS, '') LIKE :search4 OR COALESCE(CAST(YEAR AS CHAR), '') LIKE :search5)"];
 if ($category !== '') {
     $conditions[] = "CATEGORY = :category";
 }
@@ -327,25 +445,7 @@ if (!empty($certifications)) {
 
 $whereClause = implode(' AND ', $conditions);
 
-$sql = "SELECT 
-            NUM, 
-            FORMATTEDTITLE, 
-            YEAR, 
-            CATEGORY, 
-            RATING, 
-            USERRATING, 
-            DESCRIPTION,
-            CERTIFICATION,
-            DIRECTOR, 
-            ACTORS, 
-            URL, 
-            PICTURENAME, 
-            LENGTH,
-            COUNTRY,
-            RESOLUTION,
-            AUDIOFORMAT,
-            FILESIZE,
-            FILEPATH
+$sql = "SELECT $movieColumns
         FROM $tableToQuery
         WHERE $whereClause
         ORDER BY $orderBy 
@@ -375,10 +475,9 @@ try {
     $stmt->execute();
     $rows = $stmt->fetchAll();
     
-    // ===== FIXED PAGINATION LOGIC =====
-    // If we got fewer results than requested, we've reached the end
-    // If we got exactly the limit, there MIGHT be more (check next batch)
+    // ===== PAGINATION LOGIC =====
     $returnedCount = count($rows);
+    // Provisional answer: the exact one is computed from the COUNT(*) below.
     $hasMore = ($returnedCount === $limit);
     
 } catch (\PDOException $e) {
@@ -406,44 +505,72 @@ try {
     }
     $countStmt->execute();
     $totalResult = $countStmt->fetch();
-    $totalMatches = $totalResult['total'] ?? 0;
+    $totalMatches = (int)($totalResult['total'] ?? 0);
+    // "Returned exactly limit rows" is NOT proof of another page (a total that is an
+    // exact multiple of the page size used to produce a dead Load More button).
+    // Only the real total can answer this.
+    $hasMore = ($offset + $returnedCount) < $totalMatches;
 } catch (\PDOException $e) {
     $totalMatches = 0; // fallback
 }
 
 // Map DB Columns to Frontend Model
-$movies = array_map(function($row) use ($posterBaseUrl, $posterBasePath, $noPosterFileName, $useParipakva, $paripakvaPosterBasePath, $paripakvaPosterBaseUrl) {
-    
+$movies = array_map(function ($row) use ($useParipakva, $posterConfig, $noPosterFileName) {
+    return mapMovieRow($row, $useParipakva, $posterConfig, $noPosterFileName);
+}, $rows);
+
+// Return paginated response
+echo json_encode([
+    'movies' => $movies,
+    'hasMore' => $hasMore,
+    'nextOffset' => $offset + count($movies),
+    'count' => count($movies),
+    'limit' => $limit,
+    'offset' => $offset,
+    'totalMatches' => $totalMatches,
+    'sort' => $sort
+]);
+// ===== HELPER FUNCTIONS =====
+
+/**
+ * Resolve the table to query from the archive flag, whitelisted against
+ * the configured table (never interpolate an untrusted table name).
+ * Returns null when the resulting table name is not whitelisted.
+ */
+function resolveMovieTable(string $table, bool $useParipakva, array $allowedTables)
+{
+    $candidate = $useParipakva ? 'paripakva' : $table;
+    return in_array($candidate, $allowedTables, true) ? $candidate : null;
+}
+
+/**
+ * Escape LIKE wildcards so user input is matched literally.
+ */
+function escapeLike(string $value): string
+{
+    return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+}
+
+/**
+ * Map a DB row to the frontend movie model (used by every endpoint).
+ */
+function mapMovieRow(array $row, bool $useParipakva, array $posterConfig, string $noPosterFileName): array
+{
+    $base = $useParipakva ? $posterConfig['paripakva'] : $posterConfig['movies'];
+
     // ===== POSTER PATH LOGIC =====
-    $posterValue = (!empty($row['PICTURENAME']) && trim($row['PICTURENAME']) !== '') 
-        ? $row['PICTURENAME'] 
+    $posterValue = (!empty($row['PICTURENAME']) && trim($row['PICTURENAME']) !== '')
+        ? $row['PICTURENAME']
         : $noPosterFileName;
-    
-    // Choose paths based on source
-    if ($useParipakva) {
-        $posterPath = $paripakvaPosterBasePath;
-        $posterUrl  = $paripakvaPosterBaseUrl;
-    } else {
-        $posterPath = $posterBasePath;
-        $posterUrl  = $posterBaseUrl;
-    }
-    
-    if (!empty($posterValue)) {
-        $filename = basename($posterValue);
-        $fullServerPath = $posterPath . $filename;
-        
-        if (file_exists($fullServerPath)) {
-            $imageSrc = $posterUrl . $filename;
-        } else {
-            $imageSrc = $posterUrl . $noPosterFileName;
-        }
-    } else {
-        $imageSrc = $posterUrl . $noPosterFileName;
-    }
+
+    $filename = basename($posterValue);
+    $imageSrc = file_exists($base['path'] . $filename)
+        ? $base['url'] . $filename
+        : $base['url'] . $noPosterFileName;
     // =============================
 
-    $rating = !empty($row['USERRATING']) ? $row['USERRATING'] : $row['RATING'];
-    
+    $rating = !empty($row['USERRATING']) ? $row['USERRATING'] : ($row['RATING'] ?? null);
+
     // ===== EXTERNAL URL LOGIC =====
     $externalUrl = null;
     if (!empty($row['URL']) && filter_var(trim($row['URL']), FILTER_VALIDATE_URL)) {
@@ -454,7 +581,7 @@ $movies = array_map(function($row) use ($posterBaseUrl, $posterBasePath, $noPost
     return [
         'id' => $row['NUM'],
         'num' => $row['NUM'],  // ← Explicit NUM field for frontend
-        'title' => $row['FORMATTEDTITLE'],
+        'title' => $row['FORMATTEDTITLE'] ?? '',
         'year' => $row['YEAR'] ?? 'N/A',
         'genre' => $row['CATEGORY'] ?? 'Unknown',
         'rating' => $rating ?? '0',
@@ -472,16 +599,4 @@ $movies = array_map(function($row) use ($posterBaseUrl, $posterBasePath, $noPost
         'external_url' => $externalUrl,
         'source' => $useParipakva ? 'paripakva' : 'movies'
     ];
-}, $rows);
-
-// Return paginated response
-echo json_encode([
-    'movies' => $movies,
-    'hasMore' => $hasMore,
-    'nextOffset' => $offset + count($movies),
-    'count' => count($movies),
-    'limit' => $limit,
-    'offset' => $offset,
-    'totalMatches' => $totalMatches,
-    'sort' => $sort
-]);
+}

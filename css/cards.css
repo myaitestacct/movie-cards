@@ -205,85 +205,12 @@
 }
 
 /* NUM Badges */
-.num-badge {
-    display: inline-block;
-    background: rgba(229, 9, 20, 0.15);
-    color: var(--accent);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    border: 1px solid rgba(229, 9, 20, 0.3);
-}
 
 .num-cell {
     font-weight: 600;
     color: var(--accent);
     min-width: 45px;
     text-align: center;
-}
-
-/* Hover Preview */
-.poster-preview {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 10px;
-    background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
-    opacity: 0;
-    transition: opacity .25s;
-}
-
-.movie-card:hover .poster-preview {
-    opacity: 1;
-}
-
-.preview-title {
-    font-weight: 600;
-    font-size: .85rem;
-}
-
-.preview-meta {
-    font-size: .75rem;
-    opacity: .8;
-}
-
-.hover-preview {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 12px;
-    background: linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.75) 45%, rgba(0,0,0,0) 100%);
-    color: white;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all .25s ease;
-    pointer-events: none;
-    font-size: .8rem;
-    line-height: 1.35;
-}
-
-.poster-wrapper:hover .hover-preview {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.preview-top {
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.preview-genre {
-    color: #d0d0d0;
-    margin-bottom: 6px;
-}
-
-.preview-desc {
-    color: #b8b8b8;
-    font-size: .75rem;
 }
 
 /* Favorite Heart Button */

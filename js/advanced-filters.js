@@ -11,6 +11,12 @@ const advFiltersClear = document.getElementById('adv-filters-clear');
 const advFiltersCount = document.getElementById('adv-filters-count');
 
 function toggleAdvancedFiltersPanel() {
+    const willOpen = !advFiltersPanel.classList.contains('open');
+
+    // Both side panels are anchored to the same edge, so only one may be open
+    // (closeQuickJumpPanel lives in quick-jump.js, which loads after this file).
+    if (willOpen && typeof closeQuickJumpPanel === 'function') closeQuickJumpPanel();
+
     advFiltersPanel.classList.toggle('open');
 }
 
@@ -109,7 +115,8 @@ function updateFilterCount() {
     if (advancedFilters.sizeTo) count++;
     if (advancedFilters.certifications.length > 0) count++;
     
-    if (count > 0) {
+    // hasAdvancedFilters() is the single source of truth for "is anything active"
+    if (hasAdvancedFilters()) {
         advFiltersCount.textContent = count;
         advFiltersCount.style.display = '';
         btnAdvancedFilters.classList.add('has-filters');

@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/lightbox.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/quick-jump.css">
     <link rel="stylesheet" href="css/theme-light.css">
     <link rel="stylesheet" href="css/responsive.css">
 
@@ -72,6 +73,16 @@
                 </svg>
                 <span class="adv-filters-label">Filters</span>
                 <span id="adv-filters-count" class="adv-filters-count" style="display:none;">0</span>
+            </button>
+            <button id="btn-quick-jump" class="adv-filters-toggle" title="Quick jump: by number, letter or decade">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                </svg>
+                <span class="adv-filters-label">Jump</span>
             </button>
             <button id="btn-theme" class="theme-toggle" title="Toggle light/dark theme">
                 <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -188,6 +199,89 @@
         </div>
     </div>
 
+    <!-- Quick Jump Panel -->
+    <div id="quick-jump-panel" class="quick-jump-panel">
+        <div class="adv-filters-header">
+            <h3>Quick Jump</h3>
+            <button id="quick-jump-close" class="adv-filters-close">&times;</button>
+        </div>
+        <div class="adv-filters-body">
+            <!-- Mode selector -->
+            <div class="segmented-control qj-tabs">
+                <button class="seg-btn qj-tab-btn active" data-tab="number" type="button">Number</button>
+                <button class="seg-btn qj-tab-btn" data-tab="letter" type="button">Letter</button>
+                <button class="seg-btn qj-tab-btn" data-tab="decade" type="button">Decade</button>
+            </div>
+
+            <!-- By number -->
+            <section class="qj-tab-panel active" data-tab-panel="number">
+                <label class="filter-label" for="jump-to-number">Movie number</label>
+                <div class="filter-row">
+                    <input type="number" id="jump-to-number" class="filter-input" placeholder="e.g. 1024" min="1" step="1">
+                    <button id="jump-number-btn" class="adv-filters-btn-primary qj-go-btn" type="button">Go</button>
+                </div>
+                <p id="jump-number-status" class="jump-status">Enter a movie # and press Go.</p>
+            </section>
+
+            <!-- By letter -->
+            <section class="qj-tab-panel" data-tab-panel="letter">
+                <label class="filter-label">Titles starting with</label>
+                <div class="qj-letter-grid">
+                    <button class="jump-letter-btn" data-letter="A" type="button">A</button>
+                    <button class="jump-letter-btn" data-letter="B" type="button">B</button>
+                    <button class="jump-letter-btn" data-letter="C" type="button">C</button>
+                    <button class="jump-letter-btn" data-letter="D" type="button">D</button>
+                    <button class="jump-letter-btn" data-letter="E" type="button">E</button>
+                    <button class="jump-letter-btn" data-letter="F" type="button">F</button>
+                    <button class="jump-letter-btn" data-letter="G" type="button">G</button>
+                    <button class="jump-letter-btn" data-letter="H" type="button">H</button>
+                    <button class="jump-letter-btn" data-letter="I" type="button">I</button>
+                    <button class="jump-letter-btn" data-letter="J" type="button">J</button>
+                    <button class="jump-letter-btn" data-letter="K" type="button">K</button>
+                    <button class="jump-letter-btn" data-letter="L" type="button">L</button>
+                    <button class="jump-letter-btn" data-letter="M" type="button">M</button>
+                    <button class="jump-letter-btn" data-letter="N" type="button">N</button>
+                    <button class="jump-letter-btn" data-letter="O" type="button">O</button>
+                    <button class="jump-letter-btn" data-letter="P" type="button">P</button>
+                    <button class="jump-letter-btn" data-letter="Q" type="button">Q</button>
+                    <button class="jump-letter-btn" data-letter="R" type="button">R</button>
+                    <button class="jump-letter-btn" data-letter="S" type="button">S</button>
+                    <button class="jump-letter-btn" data-letter="T" type="button">T</button>
+                    <button class="jump-letter-btn" data-letter="U" type="button">U</button>
+                    <button class="jump-letter-btn" data-letter="V" type="button">V</button>
+                    <button class="jump-letter-btn" data-letter="W" type="button">W</button>
+                    <button class="jump-letter-btn" data-letter="X" type="button">X</button>
+                    <button class="jump-letter-btn" data-letter="Y" type="button">Y</button>
+                    <button class="jump-letter-btn" data-letter="Z" type="button">Z</button>
+                    <button class="jump-letter-btn" data-letter="#" type="button" title="Titles starting with a digit">#</button>
+                </div>
+                <p id="jump-letter-status" class="jump-status">Pick a letter to list its movies.</p>
+            </section>
+
+            <!-- By decade -->
+            <section class="qj-tab-panel" data-tab-panel="decade">
+                <label class="filter-label">Released in</label>
+                <div class="qj-decade-grid">
+                    <button class="jump-decade-btn" data-decade="1930" type="button">1930s</button>
+                    <button class="jump-decade-btn" data-decade="1940" type="button">1940s</button>
+                    <button class="jump-decade-btn" data-decade="1950" type="button">1950s</button>
+                    <button class="jump-decade-btn" data-decade="1960" type="button">1960s</button>
+                    <button class="jump-decade-btn" data-decade="1970" type="button">1970s</button>
+                    <button class="jump-decade-btn" data-decade="1980" type="button">1980s</button>
+                    <button class="jump-decade-btn" data-decade="1990" type="button">1990s</button>
+                    <button class="jump-decade-btn" data-decade="2000" type="button">2000s</button>
+                    <button class="jump-decade-btn" data-decade="2010" type="button">2010s</button>
+                    <button class="jump-decade-btn" data-decade="2020" type="button">2020s</button>
+                </div>
+                <p id="jump-decade-status" class="jump-status">Pick a decade to list its movies.</p>
+            </section>
+        </div>
+        <div class="adv-filters-footer qj-footer">
+            <span class="qj-info">In collection: <strong id="total-movies-count">—</strong></span>
+            <span id="current-position" class="jump-status"></span>
+        </div>
+    </div>
+
     <div id="search-results-count" class="results-count"></div>
 
     <!-- Breadcrumb Navigation -->
@@ -279,6 +373,7 @@
     <script src="js/keyboard-nav.js"></script>
     <script src="js/render.js"></script>
     <script src="js/modal.js"></script>
+    <script src="js/quick-jump.js"></script>
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>

@@ -12,14 +12,6 @@
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
 }
 
-.logo {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--accent);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
 .controls {
     display: flex;
     gap: 15px;

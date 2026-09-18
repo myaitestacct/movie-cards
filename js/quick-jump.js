@@ -1,5 +1,6 @@
 // ============================================
-// QUICK JUMP NAVIGATION
+// QUICK JUMP: Jump to a movie by number,
+// first letter, or decade
 // ============================================
 
 const btnQuickJump = document.getElementById('btn-quick-jump');
@@ -13,171 +14,205 @@ const jumpDecadeStatus = document.getElementById('jump-decade-status');
 const totalMoviesCount = document.getElementById('total-movies-count');
 const currentPosition = document.getElementById('current-position');
 
-// Toggle Quick Jump Panel
+// --- Panel open/close ---
+// Both side panels are anchored to the same edge, so only one may be open.
+function isQuickJumpOpen() {
+    return quickJumpPanel.classList.contains('open');
+}
+
+function openQuickJumpPanel() {
+    const advPanel = document.getElementById('advanced-filters-panel');
+    if (advPanel) advPanel.classList.remove('open');
+
+    quickJumpPanel.classList.add('open');
+    updateCollectionInfo();
+}
+
+function closeQuickJumpPanel() {
+    quickJumpPanel.classList.remove('open');
+}
+
 function toggleQuickJumpPanel() {
-    quickJumpPanel.classList.toggle('open');
-    if (quickJumpPanel.classList.contains('open')) {
-        updateCollectionInfo();
-    }
+    if (isQuickJumpOpen()) closeQuickJumpPanel();
+    else openQuickJumpPanel();
 }
 
 btnQuickJump.addEventListener('click', toggleQuickJumpPanel);
-quickJumpClose.addEventListener('click', () => quickJumpPanel.classList.remove('open'));
+quickJumpClose.addEventListener('click', closeQuickJumpPanel);
 
 // Close panel when clicking outside
 document.addEventListener('click', (e) => {
-    if (quickJumpPanel.classList.contains('open') &&
+    if (isQuickJumpOpen() &&
         !quickJumpPanel.contains(e.target) &&
         !btnQuickJump.contains(e.target)) {
-        quickJumpPanel.classList.remove('open');
+        closeQuickJumpPanel();
     }
 });
 
-// Update Collection Info
+// Escape closes the panel
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isQuickJumpOpen()) {
+        closeQuickJumpPanel();
+    }
+});
+
+// --- Tabs (Number / Letter / Decade) ---
+const qjTabButtons = Array.from(document.querySelectorAll('.qj-tab-btn'));
+const qjTabPanels = Array.from(document.querySelectorAll('.qj-tab-panel'));
+
+qjTabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        qjTabButtons.forEach(b => b.classList.toggle('active', b === btn));
+        qjTabPanels.forEach(p => p.classList.toggle('active', p.dataset.tabPanel === btn.dataset.tab));
+    });
+});
+
+// --- Helpers ---
+function setJumpStatus(el, message, kind = '') {
+    el.textContent = message;
+    el.className = 'jump-status' + (kind ? ' ' + kind : '');
+}
+
+function setJumpButtonsDisabled(selector, disabled) {
+    document.querySelectorAll(selector).forEach(btn => { btn.disabled = disabled; });
+}
+
+// Quick jump replaces the normal paged listing with a fixed result set, so
+// infinite scroll / Load More must not append unrelated pages to it.
+function renderJumpResults(movies, positionLabel) {
+    hasMoreResults = false;
+    currentOffset = 0;
+    renderGrid(movies);
+    currentPosition.textContent = positionLabel;
+    contentArea.scrollTop = 0;
+}
+
+// --- Collection info ---
 async function updateCollectionInfo() {
     try {
-        const response = await fetch('api.php?action=stats');
+        const response = await fetch(`api.php?action=stats&archive=${showParipakva ? 1 : 0}`);
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+
         const data = await response.json();
-        totalMoviesCount.textContent = data.totalMovies.toLocaleString();
-        currentPosition.textContent = `Movie #1 of ${data.totalMovies.toLocaleString()}`;
+        const total = Number(data.totalMovies) || 0;
+        totalMoviesCount.textContent = total.toLocaleString();
+
+        if (!currentPosition.textContent) {
+            currentPosition.textContent = `Movie #1 of ${total.toLocaleString()}`;
+        }
     } catch (error) {
         console.error('Error fetching collection info:', error);
-        totalMoviesCount.textContent = 'Error';
+        totalMoviesCount.textContent = '—';
     }
 }
 
-// Jump to Movie Number
-jumpNumberBtn.addEventListener('click', async () => {
-    const num = parseInt(jumpToNumberInput.value);
+// --- Jump to Movie Number ---
+async function jumpToNumber() {
+    const num = parseInt(jumpToNumberInput.value, 10);
+
     if (!num || num < 1) {
-        jumpNumberStatus.textContent = 'Please enter a valid movie number';
-        jumpNumberStatus.className = 'jump-status error';
+        setJumpStatus(jumpNumberStatus, 'Please enter a movie number above 0.', 'error');
         return;
     }
 
-    jumpNumberStatus.textContent = 'Searching...';
-    jumpNumberStatus.className = 'jump-status';
+    setJumpStatus(jumpNumberStatus, 'Searching...');
+    jumpNumberBtn.disabled = true;
 
     try {
-        const response = await fetch(`api.php?action=get_movie_by_num&num=${num}`);
+        const response = await fetch(
+            `api.php?action=get_movie_by_num&num=${encodeURIComponent(num)}&archive=${showParipakva ? 1 : 0}`
+        );
         const data = await response.json();
 
         if (data.success && data.movie) {
-            jumpNumberStatus.textContent = `✓ Found: ${data.movie.title}`;
-            jumpNumberStatus.className = 'jump-status success';
-            
-            clearContainer(contentArea);
-            const grid = createElement('div', 'movie-grid');
-            contentArea.appendChild(grid);
-            
-            renderGrid([data.movie]);
-            
-            currentPosition.textContent = `Movie #${num}`;
-            
-            contentArea.scrollTop = 0;
-            
-            setTimeout(() => {
-                quickJumpPanel.classList.remove('open');
-            }, 1000);
+            renderJumpResults([data.movie], `Movie #${num}`);
+            setJumpStatus(jumpNumberStatus, `✓ Found: ${data.movie.title}`, 'success');
+
+            setTimeout(closeQuickJumpPanel, 1000);
         } else {
-            jumpNumberStatus.textContent = data.message || 'Movie not found';
-            jumpNumberStatus.className = 'jump-status error';
+            setJumpStatus(jumpNumberStatus, data.message || 'Movie not found', 'error');
         }
     } catch (error) {
         console.error('Error jumping to movie:', error);
-        jumpNumberStatus.textContent = 'Error fetching movie';
-        jumpNumberStatus.className = 'jump-status error';
+        setJumpStatus(jumpNumberStatus, 'Error fetching movie', 'error');
+    } finally {
+        jumpNumberBtn.disabled = false;
     }
-});
+}
 
-// Allow Enter key in number input
-jumpToNumberInput.addEventListener('keypress', (e) => {
+jumpNumberBtn.addEventListener('click', jumpToNumber);
+
+jumpToNumberInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        jumpNumberBtn.click();
+        e.preventDefault();
+        jumpToNumber();
     }
 });
 
-// Jump to Letter
+// --- Jump to Letter ---
 document.querySelectorAll('.jump-letter-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
         const letter = btn.dataset.letter;
-        
-        jumpLetterStatus.textContent = 'Searching...';
-        jumpLetterStatus.className = 'jump-status';
+
+        setJumpStatus(jumpLetterStatus, 'Searching...');
+        setJumpButtonsDisabled('.jump-letter-btn', true);
 
         try {
-            const searchTerm = letter === '#' ? '[0-9]' : letter;
-            const response = await fetch(`api.php?action=get_movies_by_letter&letter=${encodeURIComponent(searchTerm)}&limit=50`);
+            const response = await fetch(
+                `api.php?action=get_movies_by_letter&letter=${encodeURIComponent(letter)}&limit=50&archive=${showParipakva ? 1 : 0}`
+            );
             const data = await response.json();
 
             if (data.success && data.movies && data.movies.length > 0) {
-                jumpLetterStatus.textContent = `✓ Found ${data.count} movies starting with "${letter}"`;
-                jumpLetterStatus.className = 'jump-status success';
-                
-                clearContainer(contentArea);
-                const grid = createElement('div', 'movie-grid');
-                contentArea.appendChild(grid);
-                
-                renderGrid(data.movies);
-                
-                currentPosition.textContent = `Movies starting with "${letter}"`;
-                
-                contentArea.scrollTop = 0;
-                
-                setTimeout(() => {
-                    quickJumpPanel.classList.remove('open');
-                }, 1000);
+                renderJumpResults(data.movies, `Titles starting with "${letter}"`);
+                setJumpStatus(jumpLetterStatus, `✓ Found ${data.count} movie(s) starting with "${letter}"`, 'success');
+
+                setTimeout(closeQuickJumpPanel, 1000);
+            } else if (data.success) {
+                setJumpStatus(jumpLetterStatus, `No movies found starting with "${letter}"`, 'error');
             } else {
-                jumpLetterStatus.textContent = `No movies found starting with "${letter}"`;
-                jumpLetterStatus.className = 'jump-status error';
+                setJumpStatus(jumpLetterStatus, data.error || 'Error fetching movies', 'error');
             }
         } catch (error) {
             console.error('Error jumping to letter:', error);
-            jumpLetterStatus.textContent = 'Error fetching movies';
-            jumpLetterStatus.className = 'jump-status error';
+            setJumpStatus(jumpLetterStatus, 'Error fetching movies', 'error');
+        } finally {
+            setJumpButtonsDisabled('.jump-letter-btn', false);
         }
     });
 });
 
-// Jump to Decade
+// --- Jump to Decade ---
 document.querySelectorAll('.jump-decade-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
         const decade = btn.dataset.decade;
-        const yearFrom = parseInt(decade);
+        const yearFrom = parseInt(decade, 10);
         const yearTo = yearFrom + 9;
-        
-        jumpDecadeStatus.textContent = 'Searching...';
-        jumpDecadeStatus.className = 'jump-status';
+
+        setJumpStatus(jumpDecadeStatus, 'Searching...');
+        setJumpButtonsDisabled('.jump-decade-btn', true);
 
         try {
-            const response = await fetch(`api.php?action=get_movies_by_decade&from=${yearFrom}&to=${yearTo}&limit=50`);
+            const response = await fetch(
+                `api.php?action=get_movies_by_decade&from=${yearFrom}&to=${yearTo}&limit=50&archive=${showParipakva ? 1 : 0}`
+            );
             const data = await response.json();
 
             if (data.success && data.movies && data.movies.length > 0) {
-                jumpDecadeStatus.textContent = `✓ Found ${data.count} movies from ${yearFrom}s`;
-                jumpDecadeStatus.className = 'jump-status success';
-                
-                clearContainer(contentArea);
-                const grid = createElement('div', 'movie-grid');
-                contentArea.appendChild(grid);
-                
-                renderGrid(data.movies);
-                
-                currentPosition.textContent = `Movies from ${yearFrom}s`;
-                
-                contentArea.scrollTop = 0;
-                
-                setTimeout(() => {
-                    quickJumpPanel.classList.remove('open');
-                }, 1000);
+                renderJumpResults(data.movies, `Movies from the ${decade}s`);
+                setJumpStatus(jumpDecadeStatus, `✓ Found ${data.count} movie(s) from the ${decade}s`, 'success');
+
+                setTimeout(closeQuickJumpPanel, 1000);
+            } else if (data.success) {
+                setJumpStatus(jumpDecadeStatus, `No movies found from the ${decade}s`, 'error');
             } else {
-                jumpDecadeStatus.textContent = `No movies found from ${yearFrom}s`;
-                jumpDecadeStatus.className = 'jump-status error';
+                setJumpStatus(jumpDecadeStatus, data.error || 'Error fetching movies', 'error');
             }
         } catch (error) {
             console.error('Error jumping to decade:', error);
-            jumpDecadeStatus.textContent = 'Error fetching movies';
-            jumpDecadeStatus.className = 'jump-status error';
+            setJumpStatus(jumpDecadeStatus, 'Error fetching movies', 'error');
+        } finally {
+            setJumpButtonsDisabled('.jump-decade-btn', false);
         }
     });
 });

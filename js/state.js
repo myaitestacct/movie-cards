@@ -36,5 +36,9 @@ var advancedFilters = {
     resolutions: [],
     audioFormats: [],
     country: '',
+    director: '',
+    actors: '',
+    sizeFrom: '',
+    sizeTo: '',
     certifications: []
 };
