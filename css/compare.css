@@ -1,0 +1,533 @@
+/* ============================================
+   COMPARE: card toggle, floating tray, matrix
+   ============================================ */
+
+/* Card buttons ------------------------------------------------------------ */
+
+.compare-card-btn {
+    position: absolute;
+    top: 40px;
+    right: 42px;              /* sits beside the favourite heart */
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.compare-card-btn:hover {
+    color: #fff;
+    background: rgba(229, 9, 20, 0.75);
+    transform: scale(1.08);
+}
+
+.compare-card-btn.active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* List view variant: inline next to the favourite button */
+.compare-list-btn {
+    position: static;
+    width: 28px;
+    height: 28px;
+    margin: 2px auto 0;
+    font-size: 0.8rem;
+}
+
+/* Floating tray ----------------------------------------------------------- */
+
+.compare-tray {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 110%);
+    z-index: 1500;
+    width: min(900px, calc(100vw - 24px));
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+}
+
+.compare-tray.visible {
+    transform: translate(-50%, 0);
+}
+
+.compare-tray-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+}
+
+.compare-tray-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.compare-tray-label strong {
+    color: var(--accent);
+}
+
+.compare-tray-items {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.compare-tray-items::-webkit-scrollbar { height: 4px; }
+.compare-tray-items::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.compare-tray-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 4px 22px 4px 4px;
+    flex-shrink: 0;
+    max-width: 230px;
+}
+
+.tray-item-poster {
+    width: 26px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.tray-item-title {
+    font-size: 0.75rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+.tray-item-remove {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color 0.2s;
+}
+
+.tray-item-remove:hover {
+    color: var(--accent);
+}
+
+.compare-tray-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.compare-btn-clear,
+.compare-btn-launch {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid var(--glass-border);
+    white-space: nowrap;
+}
+
+.compare-btn-clear {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+.compare-btn-clear:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+}
+
+.compare-btn-launch {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.compare-btn-launch:hover {
+    background: #ff1f2b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.35);
+}
+
+/* Comparison dialog ------------------------------------------------------- */
+
+.compare-dialog {
+    width: min(1400px, 96vw);
+    max-width: 96vw;
+    max-height: 92vh;
+    padding: 0;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    color: var(--text-main);
+}
+
+.compare-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+}
+
+.compare-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+}
+
+.compare-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.compare-modal-title h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.compare-modal-sub {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 2px;
+}
+
+.compare-grid-scroll {
+    overflow: auto;
+    padding: 1.2rem;
+}
+
+.compare-grid {
+    display: grid;
+    gap: 14px;
+    align-items: start;
+}
+
+.compare-grid.columns-2 { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+.compare-grid.columns-3 { grid-template-columns: repeat(3, minmax(260px, 1fr)); }
+.compare-grid.columns-4 { grid-template-columns: repeat(4, minmax(240px, 1fr)); }
+
+/* Columns ----------------------------------------------------------------- */
+
+.compare-col {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.compare-col-header {
+    position: relative;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.compare-remove-col {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.compare-remove-col:hover {
+    color: var(--accent);
+}
+
+.compare-poster-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 0.7rem;
+}
+
+.compare-poster {
+    width: 130px;
+    height: 195px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+}
+
+.compare-winner-badge {
+    position: absolute;
+    left: 50%;
+    bottom: -8px;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5);
+}
+
+.compare-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-top: 6px;
+}
+
+.compare-year-badge {
+    display: inline-block;
+    margin-top: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* Matrix ------------------------------------------------------------------ */
+
+.compare-matrix-rows {
+    flex: 1;
+}
+
+.matrix-cell {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.matrix-label {
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.matrix-val {
+    font-size: 0.85rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.matrix-cast,
+.matrix-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.matrix-val-empty {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.matrix-desc-cell .matrix-desc {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.matrix-rating-val {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 5px;
+}
+
+.matrix-bar-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.matrix-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(229, 9, 20, 0.6), var(--accent));
+    border-radius: 4px;
+}
+
+.winner-cell {
+    background: rgba(229, 9, 20, 0.08);
+}
+
+.matrix-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.matrix-tag {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+/* Column footer ----------------------------------------------------------- */
+
+.compare-col-footer {
+    display: flex;
+    gap: 8px;
+    padding: 0.9rem 1rem;
+    border-top: 1px solid var(--glass-border);
+    margin-top: auto;
+}
+
+.compare-fav-btn,
+.compare-details-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--glass-border);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.compare-fav-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+.compare-fav-btn:hover,
+.compare-fav-btn.active {
+    background: rgba(229, 9, 20, 0.2);
+    border-color: var(--accent);
+    color: #ff8a8a;
+}
+
+.compare-details-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+.compare-details-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+/* Light theme ------------------------------------------------------------- */
+
+body.light-theme .compare-tray {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .compare-tray-item,
+body.light-theme .compare-col,
+body.light-theme .matrix-tag {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .matrix-bar-track {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .matrix-cell {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .compare-btn-clear,
+body.light-theme .compare-fav-btn,
+body.light-theme .compare-details-btn {
+    background: rgba(0, 0, 0, 0.05);
+    color: #444;
+}
+
+body.light-theme .compare-year-badge {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+    .compare-grid.columns-3,
+    .compare-grid.columns-4 {
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+
+    .compare-tray-inner {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 600px) {
+    .compare-grid.columns-2,
+    .compare-grid.columns-3,
+    .compare-grid.columns-4 {
+        grid-template-columns: minmax(240px, 1fr);
+    }
+
+    .compare-tray-label {
+        display: none;
+    }
+
+    .compare-tray-actions {
+        width: 100%;
+    }
+
+    .compare-btn-clear,
+    .compare-btn-launch {
+        flex: 1;
+    }
+
+    .compare-poster {
+        width: 110px;
+        height: 165px;
+    }
+}

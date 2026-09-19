@@ -23,7 +23,12 @@ var currentLimit = 50;
 var showParipakva = false;       // archive/18+ content toggle (Ctrl+Shift+K)
 var currentSort = 'num_asc';     // current sort order
 var currentCategory = '';        // current genre filter ('' = all)
+var currentDecade = '';          // decade filter ('' = all eras)
+var cachedDecades = [];          // last fetched decade list (chip labels/counts)
+var currentMovies = [];          // movies currently in the result set (slideshow/analytics)
 var FAVORITES_KEY = 'movielib_favorites';
+var COMPARE_KEY = 'movielib_compare';
+var compareList = [];            // movies queued for side-by-side comparison
 var THEME_KEY = 'movielib_theme';
 var COLLAPSE_KEY = 'movielib_collapsed';
 
@@ -40,5 +45,7 @@ var advancedFilters = {
     actors: '',
     sizeFrom: '',
     sizeTo: '',
-    certifications: []
+    certifications: [],
+    subtitles: [],       // language names, e.g. ['English', 'French']
+    subPresence: ''      // '' = any, '1' = has subtitles, '0' = no subtitles
 };

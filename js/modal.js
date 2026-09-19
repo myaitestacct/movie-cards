@@ -123,6 +123,11 @@ function openModal(movie) {
         castP
     );
 
+    // Subtitle tracks (subtitles.js renders the section)
+    if (typeof renderModalSubtitles === 'function') {
+        renderModalSubtitles(movie.subtitles, details);
+    }
+
     // Tech details
     const techSection = createElement('div', 'tech-details');
     const inlineRow = createElement('div', 'tech-row-inline');

@@ -16,10 +16,15 @@
     <link rel="stylesheet" href="css/lightbox.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/quick-jump.css">
+    <link rel="stylesheet" href="css/decades.css">
+    <link rel="stylesheet" href="css/subtitles.css">
+    <link rel="stylesheet" href="css/compare.css">
+    <link rel="stylesheet" href="css/slideshow.css">
+    <link rel="stylesheet" href="css/analytics.css">
     <link rel="stylesheet" href="css/theme-light.css">
     <link rel="stylesheet" href="css/responsive.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -73,6 +78,20 @@
                 </svg>
                 <span class="adv-filters-label">Filters</span>
                 <span id="adv-filters-count" class="adv-filters-count" style="display:none;">0</span>
+            </button>
+            <button id="btn-slideshow" class="nav-action-btn" title="Fullscreen Slideshow Mode (P)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Slideshow</span>
+            </button>
+            <button id="btn-analytics" class="nav-action-btn" title="Collection Growth &amp; Timeline Analytics (Y)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span>Growth</span>
             </button>
             <button id="btn-quick-jump" class="adv-filters-toggle" title="Quick jump: by number, letter or decade">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -130,6 +149,26 @@
                 </div>
             </div>
 
+            <!-- Subtitles & Closed Captions Filter -->
+            <div class="filter-group">
+                <label class="filter-label">Subtitles &amp; Captions</label>
+                <div class="filter-radio-row">
+                    <label class="radio-label"><input type="radio" name="filter-sub-presence" value="-1" checked> Any</label>
+                    <label class="radio-label"><input type="radio" name="filter-sub-presence" value="1"> Has Subtitles</label>
+                    <label class="radio-label"><input type="radio" name="filter-sub-presence" value="0"> No Subtitles</label>
+                </div>
+                <div class="filter-checkboxes" style="margin-top: 8px;">
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="English"> English</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="Spanish"> Spanish</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="French"> French</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="German"> German</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="Japanese"> Japanese</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="Italian"> Italian</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="Portuguese"> Portuguese</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-sub-lang" value="Arabic"> Arabic</label>
+                </div>
+            </div>
+
             <!-- Resolution -->
             <div class="filter-group">
                 <label class="filter-label">Resolution</label>
@@ -150,6 +189,7 @@
                     <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="AAC"> AAC</label>
                     <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="FLAC"> FLAC</label>
                     <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="TrueHD"> TrueHD</label>
+                    <label class="checkbox-label"><input type="checkbox" class="filter-audio" value="Atmos"> Atmos</label>
                 </div>
             </div>
 
@@ -287,6 +327,18 @@
     <!-- Breadcrumb Navigation -->
     <div id="breadcrumb" class="breadcrumb"></div>
 
+    <!-- Movies By Decade Bar -->
+    <div class="collapsible-bar" id="decade-bar">
+        <button class="collapse-toggle" id="decade-collapse-btn" title="Toggle Decades">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div id="decade-filters" class="decade-filters">
+            <!-- Decade chips injected via JS -->
+        </div>
+    </div>
+
     <!-- Genre Filter Chips -->
     <div class="collapsible-bar" id="genre-bar">
         <button class="collapse-toggle" id="genre-collapse-btn" title="Toggle genres">
@@ -367,12 +419,17 @@
     <!-- JS (order matters: state → utilities → modules → app) -->
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/subtitles.js"></script>
+    <script src="js/decades.js"></script>
+    <script src="js/compare.js"></script>
     <script src="js/favorites.js"></script>
     <script src="js/filters.js"></script>
     <script src="js/advanced-filters.js"></script>
     <script src="js/keyboard-nav.js"></script>
     <script src="js/render.js"></script>
     <script src="js/modal.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/slideshow.js"></script>
     <script src="js/quick-jump.js"></script>
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>

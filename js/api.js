@@ -2,6 +2,29 @@
 // API: Fetch Movies & Stats
 // ============================================
 
+// --- Build the listing URL for the current search/filter/sort state ---
+// Shared by fetchMovies() and every feature that pages through the collection
+// (slideshow, analytics) so they always agree on what "the current result set" is.
+function buildMoviesUrl(query = '', offset = 0) {
+    const includeArchive = showParipakva ? 1 : 0;
+
+    // Favorites is a pseudo-category handled by the API's `favs` parameter
+    let categoryParam = currentCategory;
+    let favsParam = '';
+    if (currentCategory === '__favorites__') {
+        categoryParam = '';
+        favsParam = getFavorites().join(',');
+    }
+
+    const advFilterParams = buildAdvancedFilterParams();
+
+    return `api.php?q=${encodeURIComponent(query)}&limit=${currentLimit}&offset=${offset}`
+        + `&archive=${includeArchive}&sort=${encodeURIComponent(currentSort)}`
+        + `&category=${encodeURIComponent(categoryParam)}&favs=${encodeURIComponent(favsParam)}`
+        + `&decade=${encodeURIComponent(currentDecade)}`
+        + (advFilterParams ? '&' + advFilterParams : '');
+}
+
 // --- Fetch Movies from API ---
 async function fetchMovies(query = '', offset = 0, append = false) {
     if (isLoading) return;
@@ -15,28 +38,16 @@ async function fetchMovies(query = '', offset = 0, append = false) {
             showLoadingSpinner();
         }
 
-        const includeArchive = showParipakva ? 1 : 0;
-
-        // Build category parameter
-        let categoryParam = currentCategory;
-        let favsParam = '';
-        if (currentCategory === '__favorites__') {
-            categoryParam = '';
-            const favIds = getFavorites();
-            favsParam = favIds.join(',');
-        }
-
-        // Build advanced filters parameter string
-        const advFilterParams = buildAdvancedFilterParams();
-
-        const response = await fetch(
-            `api.php?q=${encodeURIComponent(query)}&limit=${currentLimit}&offset=${offset}&archive=${includeArchive}&sort=${encodeURIComponent(currentSort)}&category=${encodeURIComponent(categoryParam)}&favs=${encodeURIComponent(favsParam)}${advFilterParams ? '&' + advFilterParams : ''}`
-        );
+        const response = await fetch(buildMoviesUrl(query, offset));
 
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const result = await response.json();
         const movies = result.movies || [];
         hasMoreResults = result.hasMore === true;
+
+        // Keep the client-side model of the result set in sync (slideshow,
+        // analytics and quick jump all read it)
+        currentMovies = append ? currentMovies.concat(movies) : movies;
 
         hideLoadingSpinner();
 

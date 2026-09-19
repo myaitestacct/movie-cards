@@ -9,6 +9,7 @@ function updateURL() {
     if (currentSort !== 'num_asc') params.set('sort', currentSort);
     if (currentCategory === '__favorites__') params.set('favs', '1');
     else if (currentCategory) params.set('genre', currentCategory);
+    if (currentDecade) params.set('decade', currentDecade);
     if (showParipakva) params.set('archive', '1');
 
     const hash = params.toString();
@@ -27,10 +28,12 @@ function loadFromURL() {
     const genre = params.get('genre') || '';
     const archive = params.get('archive') || '0';
     const favs = params.get('favs') || '0';
+    const decade = params.get('decade') || '';
 
     searchInput.value = q;
     currentSort = sort;
     currentCategory = favs === '1' ? '__favorites__' : genre;
+    currentDecade = decade;
     showParipakva = archive === '1';
 
     sortSelect.value = currentSort;
@@ -103,7 +106,7 @@ function updateBreadcrumb() {
     const breadcrumb = document.getElementById('breadcrumb');
     if (!breadcrumb) return;
 
-    if (currentCategory === '' && !searchInput.value) {
+    if (currentCategory === '' && currentDecade === '' && !searchInput.value) {
         breadcrumb.innerHTML = '';
         breadcrumb.style.display = 'none';
         return;
@@ -120,6 +123,11 @@ function updateBreadcrumb() {
         html += `<span class="breadcrumb-item breadcrumb-current">${escapeHtml(currentCategory)}</span>`;
     }
 
+    if (currentDecade) {
+        html += '<span class="breadcrumb-sep">›</span>';
+        html += `<span class="breadcrumb-item breadcrumb-current">${escapeHtml(currentDecade)}s</span>`;
+    }
+
     if (searchInput.value) {
         html += '<span class="breadcrumb-sep">›</span>';
         html += `<span class="breadcrumb-item breadcrumb-current">"${escapeHtml(searchInput.value)}"</span>`;
@@ -132,8 +140,10 @@ function updateBreadcrumb() {
     if (rootLink) {
         rootLink.addEventListener('click', () => {
             currentCategory = '';
+            currentDecade = '';
             searchInput.value = '';
             updateActiveChip();
+            updateActiveDecadeChip();
             updateBreadcrumb();
             fetchMovies('', 0, false);
         });

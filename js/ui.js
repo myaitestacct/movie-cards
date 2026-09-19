@@ -174,6 +174,8 @@ function showShortcutsOverlay() {
                 <div class="shortcut-row"><kbd>G</kbd> <span>Focus genre chips</span></div>
                 <div class="shortcut-row"><kbd>F</kbd> <span>Toggle favorites view</span></div>
                 <div class="shortcut-row"><kbd>A</kbd> <span>Toggle advanced filters</span></div>
+                <div class="shortcut-row"><kbd>P</kbd> <span>Fullscreen slideshow</span></div>
+                <div class="shortcut-row"><kbd>Y</kbd> <span>Collection growth &amp; timeline</span></div>
                 <div class="shortcut-row"><kbd>Ctrl+Shift+K</kbd> <span>Toggle archive mode</span></div>
                 <div class="shortcut-row"><kbd>?</kbd> <span>Show this help</span></div>
             </div>

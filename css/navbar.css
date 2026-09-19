@@ -130,9 +130,51 @@
     justify-content: center;
     flex: 0 0 auto;
 }
-
 .theme-toggle:hover {
     color: white;
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.2);
+}
+/* ============================================
+   NAV ACTION BUTTONS (Slideshow / Growth)
+   Labeled buttons sitting next to the icon-only
+   controls, so they follow the same glass style.
+   ============================================ */
+
+.nav-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+}
+
+.nav-action-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.nav-action-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.nav-action-btn svg {
+    flex-shrink: 0;
+}
+
+.nav-action-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
 }
