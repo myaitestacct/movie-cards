@@ -1,0 +1,332 @@
+/* ============================================
+   ANALYTICS: collection growth & timeline (Y)
+   ============================================ */
+
+.analytics-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 3vw;
+    background: rgba(5, 5, 5, 0.72);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.analytics-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.analytics-panel {
+    display: flex;
+    flex-direction: column;
+    width: min(1100px, 100%);
+    max-height: 90vh;
+    overflow: hidden;
+    transform: translateY(12px) scale(0.99);
+    transition: transform 0.3s ease;
+}
+
+.analytics-overlay.show .analytics-panel {
+    transform: translateY(0) scale(1);
+}
+
+/* Header ------------------------------------------------------------------ */
+
+.analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.analytics-header h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.analytics-subtitle {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.analytics-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Body -------------------------------------------------------------------- */
+
+.analytics-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.analytics-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.analytics-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.analytics-loading,
+.analytics-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Stat cards -------------------------------------------------------------- */
+
+.analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.6rem;
+}
+
+.analytics-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+}
+
+.analytics-card-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.analytics-card-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+/* Chart blocks ------------------------------------------------------------ */
+
+.analytics-chart-block {
+    margin-bottom: 1.6rem;
+}
+
+.analytics-chart-block h4 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.analytics-note {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.analytics-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.4rem 2rem;
+}
+
+/* SVG timeline ------------------------------------------------------------ */
+
+.chart-svg {
+    width: 100%;
+    height: 230px;
+    overflow: visible;
+}
+
+.chart-bar {
+    fill: rgba(229, 9, 20, 0.65);
+    transition: fill 0.2s ease;
+}
+
+.chart-bar:hover {
+    fill: var(--accent);
+}
+
+.chart-bar-last {
+    fill: rgba(229, 9, 20, 0.95);
+}
+
+.chart-grid {
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 1;
+}
+
+.chart-cumulative {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.chart-label {
+    fill: var(--text-muted);
+    font-size: 11px;
+    font-family: inherit;
+}
+
+/* Horizontal bars --------------------------------------------------------- */
+
+.analytics-bar-row {
+    display: grid;
+    grid-template-columns: minmax(72px, 26%) 1fr auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 4px 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.analytics-bar-clickable {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin: 0 -6px;
+    transition: background 0.2s ease;
+}
+
+.analytics-bar-clickable:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.analytics-bar-clickable:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.analytics-bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.analytics-bar-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.analytics-bar-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(229, 9, 20, 0.55), var(--accent));
+    border-radius: 4px;
+}
+
+.analytics-bar-count {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+.analytics-footer {
+    padding: 0.8rem 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.analytics-hint {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* Body scroll lock -------------------------------------------------------- */
+
+body.analytics-open {
+    overflow: hidden;
+}
+
+/* Light theme ------------------------------------------------------------- */
+
+body.light-theme .analytics-overlay {
+    background: rgba(240, 240, 240, 0.8);
+}
+
+body.light-theme .analytics-panel {
+    background: rgba(255, 255, 255, 0.97);
+}
+
+body.light-theme .analytics-card {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .chart-grid {
+    stroke: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .chart-cumulative {
+    stroke: rgba(0, 0, 0, 0.45);
+}
+
+body.light-theme .analytics-bar-track {
+    background: rgba(0, 0, 0, 0.07);
+}
+
+body.light-theme .analytics-bar-clickable:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .analytics-overlay {
+        padding: 0;
+    }
+
+    .analytics-panel {
+        width: 100%;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .analytics-header {
+        padding: 1rem;
+    }
+
+    .analytics-body {
+        padding: 1rem;
+    }
+
+    .analytics-bar-row {
+        grid-template-columns: minmax(60px, 32%) 1fr auto;
+    }
+}

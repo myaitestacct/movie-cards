@@ -28,8 +28,9 @@ $posterConfig = [
 $noPosterFileName = 'movies_0000-coming_soon.jpg';
 // ====================================
 
-// ===== MOVIE COLUMNS (shared by every SELECT below) =====
-$movieColumns = 'NUM, FORMATTEDTITLE, YEAR, CATEGORY, RATING, USERRATING, DESCRIPTION, '
+// ===== MOVIE COLUMNS =====
+// SUBTITLES is appended per request: it exists in some databases, not others.
+$baseMovieColumns = 'NUM, FORMATTEDTITLE, YEAR, CATEGORY, RATING, USERRATING, DESCRIPTION, '
     . 'CERTIFICATION, DIRECTOR, ACTORS, URL, PICTURENAME, LENGTH, COUNTRY, '
     . 'RESOLUTION, AUDIOFORMAT, FILESIZE, FILEPATH';
 
@@ -59,6 +60,16 @@ if ($tableToQuery === null) {
     echo json_encode(['error' => 'Invalid table']);
     exit;
 }
+
+// ===== OPTIONAL COLUMNS =====
+// Subtitles live in a column that only some databases have. When it is missing
+// every query still works - the column is selected as NULL and the subtitle
+// filters simply report "nothing has subtitles".
+$subtitlesColumn = findColumn($pdo, $tableToQuery, ['SUBTITLES', 'SUBTITLE', 'SUBS', 'SUBTITLELANGUAGE']);
+$quoteSubtitles = $subtitlesColumn !== null ? '`' . $subtitlesColumn . '`' : null;
+
+$movieColumns = $baseMovieColumns . ', '
+    . ($quoteSubtitles !== null ? "$quoteSubtitles AS SUBTITLES" : 'NULL AS SUBTITLES');
 
 // ===== HANDLE SPECIAL ACTIONS =====
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
@@ -96,62 +107,149 @@ if ($action === 'stats') {
         $topGenreCount = $topGenreRow ? $topGenreRow['cnt'] : 0;
 
         // Total runtime (calculate from LENGTH field)
-        $runtimeStmt = $pdo->prepare("SELECT LENGTH FROM $tableToQuery WHERE LENGTH IS NOT NULL AND LENGTH != ''");
-        $runtimeStmt->execute();
-        $totalMinutes = 0;
-        while ($row = $runtimeStmt->fetch()) {
-            $length = trim($row['LENGTH']);
-            if (empty($length)) continue;
-            
-            // Parse various formats: "2h 30m", "2h30m", "120 min", "120min", "2:30"
-            $minutes = 0;
-            
-            // Format: "2h 30m" or "2h30m"
-            if (preg_match('/(\d+)\s*h(?:ours?)?\s*(\d+)?\s*m(?:in(?:utes?)?)?/i', $length, $matches)) {
-                $hours = (int)$matches[1];
-                $mins = isset($matches[2]) ? (int)$matches[2] : 0;
-                $minutes = ($hours * 60) + $mins;
-            }
-            // Format: "120 min" or "120min" or just "120"
-            elseif (preg_match('/^(\d+)\s*(?:min(?:utes?)?)?$/i', $length, $matches)) {
-                $minutes = (int)$matches[1];
-            }
-            // Format: "2:30" (hours:minutes)
-            elseif (preg_match('/^(\d+):(\d+)$/', $length, $matches)) {
-                $hours = (int)$matches[1];
-                $mins = (int)$matches[2];
-                $minutes = ($hours * 60) + $mins;
-            }
-            
-            $totalMinutes += $minutes;
-        }
-        
-        // Format total runtime nicely
-        $totalHours = floor($totalMinutes / 60);
-        $remainingMinutes = $totalMinutes % 60;
-        $totalDays = floor($totalHours / 24);
-        $remainingHours = $totalHours % 24;
-        
-        $totalRuntimeFormatted = '';
-        if ($totalDays > 0) {
-            $totalRuntimeFormatted = "{$totalDays}d {$remainingHours}h";
-        } elseif ($totalHours > 0) {
-            $totalRuntimeFormatted = "{$totalHours}h {$remainingMinutes}m";
-        } else {
-            $totalRuntimeFormatted = "{$remainingMinutes}m";
-        }
+        $totalMinutes = sumRuntimeMinutes($pdo, $tableToQuery);
 
         echo json_encode([
             'totalMovies' => (int)$totalMovies,
             'avgRating' => $avgRating,
             'topGenre' => $topGenre,
             'topGenreCount' => (int)$topGenreCount,
-            'totalRuntime' => $totalRuntimeFormatted,
+            'totalRuntime' => formatRuntime($totalMinutes),
             'totalRuntimeMinutes' => $totalMinutes
         ]);
     } catch (\PDOException $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to fetch stats']);
+    }
+    exit;
+}
+
+// ===== ANALYTICS: collection growth & timeline =====
+if ($action === 'analytics') {
+    try {
+        // Movies per release year (dirty YEAR values are ignored, not cast to 0)
+        $yearStmt = $pdo->prepare("SELECT CAST(YEAR AS UNSIGNED) AS year,
+                                          COUNT(*) AS count,
+                                          AVG(CAST(COALESCE(NULLIF(USERRATING, ''), RATING) AS DECIMAL(4,1))) AS avg_rating
+                                   FROM $tableToQuery
+                                   WHERE YEAR IS NOT NULL AND CAST(YEAR AS UNSIGNED) BETWEEN 1888 AND 2100
+                                   GROUP BY CAST(YEAR AS UNSIGNED)
+                                   ORDER BY year ASC");
+        $yearStmt->execute();
+        $byYear = [];
+        foreach ($yearStmt->fetchAll() as $row) {
+            $byYear[] = [
+                'year' => (int)$row['year'],
+                'count' => (int)$row['count'],
+                'avgRating' => $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : null
+            ];
+        }
+
+        // Decades are derived from the yearly series so both charts always agree
+        $byDecade = buildDecadeSeries($byYear);
+
+        $byGenre = fetchTopGroups($pdo, $tableToQuery, 'CATEGORY', 12);
+        $byCountry = fetchTopGroups($pdo, $tableToQuery, 'COUNTRY', 8);
+        $byDirector = fetchTopGroups($pdo, $tableToQuery, 'DIRECTOR', 8);
+
+        $totalsStmt = $pdo->prepare("SELECT COUNT(*) AS total,
+                                            SUM(CAST(FILESIZE AS DECIMAL(12,2))) AS size_mb,
+                                            MIN(CAST(YEAR AS UNSIGNED)) AS first_year,
+                                            MAX(CAST(YEAR AS UNSIGNED)) AS last_year
+                                     FROM $tableToQuery");
+        $totalsStmt->execute();
+        $totals = $totalsStmt->fetch() ?: [];
+
+        $minutes = sumRuntimeMinutes($pdo, $tableToQuery);
+        $totalMovies = (int)($totals['total'] ?? 0);
+        $sizeMb = (float)($totals['size_mb'] ?? 0);
+        $firstYear = !empty($totals['first_year']) ? (int)$totals['first_year'] : null;
+        $lastYear = !empty($totals['last_year']) ? (int)$totals['last_year'] : null;
+
+        // Optional: a date-added column turns "growth" into acquisition growth.
+        // Everything here is best-effort - a missing column or a restricted
+        // information_schema must never break the endpoint.
+        $addedSeries = null;
+        $dateColumn = findDateColumn($pdo, $tableToQuery);
+        if ($dateColumn !== null) {
+            try {
+                $addedStmt = $pdo->prepare("SELECT DATE_FORMAT(`$dateColumn`, '%Y-%m') AS month, COUNT(*) AS count
+                                            FROM $tableToQuery
+                                            WHERE `$dateColumn` IS NOT NULL AND `$dateColumn` > '1970-01-01'
+                                            GROUP BY month
+                                            ORDER BY month ASC");
+                $addedStmt->execute();
+                $rows = $addedStmt->fetchAll();
+                if (!empty($rows)) {
+                    $addedSeries = array_map(function ($row) {
+                        return ['month' => $row['month'], 'count' => (int)$row['count']];
+                    }, $rows);
+                }
+            } catch (\PDOException $e) {
+                $addedSeries = null; // column exists but is not a usable date
+            }
+        }
+
+        echo json_encode([
+            'totalMovies' => $totalMovies,
+            'totalRuntime' => formatRuntime($minutes),
+            'totalRuntimeMinutes' => $minutes,
+            'totalSizeMb' => round($sizeMb, 1),
+            'firstYear' => $firstYear,
+            'lastYear' => $lastYear,
+            'byYear' => $byYear,
+            'byDecade' => $byDecade,
+            'byGenre' => $byGenre,
+            'byCountry' => $byCountry,
+            'byDirector' => $byDirector,
+            'dateColumn' => $dateColumn,
+            'addedByMonth' => $addedSeries,
+            'source' => $useParipakva ? 'paripakva' : 'movies'
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to build analytics']);
+    }
+    exit;
+}
+
+// ===== DECADES: decade chips with counts and average ratings =====
+if ($action === 'decades') {
+    try {
+        $stmt = $pdo->prepare("SELECT CAST(YEAR AS UNSIGNED) AS year,
+                                      COUNT(*) AS count,
+                                      AVG(CAST(COALESCE(NULLIF(USERRATING, ''), RATING) AS DECIMAL(4,1))) AS avg_rating
+                               FROM $tableToQuery
+                               WHERE YEAR IS NOT NULL AND CAST(YEAR AS UNSIGNED) BETWEEN 1888 AND 2100
+                               GROUP BY CAST(YEAR AS UNSIGNED)
+                               ORDER BY year ASC");
+        $stmt->execute();
+
+        $byYear = array_map(function ($row) {
+            return [
+                'year' => (int)$row['year'],
+                'count' => (int)$row['count'],
+                'avgRating' => $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : null
+            ];
+        }, $stmt->fetchAll());
+
+        $decades = array_map(function ($d) {
+            return [
+                'decade' => $d['decade'],
+                'label' => $d['decade'] . 's',
+                'count' => $d['count'],
+                'avgRating' => $d['avgRating'],
+            ];
+        }, buildDecadeSeries($byYear));
+
+        echo json_encode([
+            'success' => true,
+            'decades' => $decades,
+            'source' => $useParipakva ? 'paripakva' : 'movies'
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch decades']);
     }
     exit;
 }
@@ -291,6 +389,7 @@ $favsParam = isset($_GET['favs']) ? trim($_GET['favs']) : '';
 // ===== ADVANCED FILTER PARAMETERS =====
 $yearFrom = isset($_GET['year_from']) ? (int)$_GET['year_from'] : 0;
 $yearTo = isset($_GET['year_to']) ? (int)$_GET['year_to'] : 0;
+$decade = isset($_GET['decade']) ? (int)$_GET['decade'] : 0;
 $ratingFrom = isset($_GET['rating_from']) ? (float)$_GET['rating_from'] : 0;
 $ratingTo = isset($_GET['rating_to']) ? (float)$_GET['rating_to'] : 0;
 $resolutionsParam = isset($_GET['resolutions']) ? trim($_GET['resolutions']) : '';
@@ -301,11 +400,14 @@ $actorsParam = isset($_GET['actors']) ? trim($_GET['actors']) : '';
 $sizeFrom = isset($_GET['size_from']) ? (float)$_GET['size_from'] : 0;
 $sizeTo = isset($_GET['size_to']) ? (float)$_GET['size_to'] : 0;
 $certificationsParam = isset($_GET['certifications']) ? trim($_GET['certifications']) : '';
+$subtitlesParam = isset($_GET['subtitles']) ? trim($_GET['subtitles']) : '';
+$subPresenceParam = isset($_GET['sub_presence']) ? trim($_GET['sub_presence']) : '';   // '' = any, '1' = has, '0' = none
 
 // Parse comma-separated values
 $resolutions = $resolutionsParam ? array_filter(array_map('trim', explode(',', $resolutionsParam))) : [];
 $audioFormats = $audioParam ? array_filter(array_map('trim', explode(',', $audioParam))) : [];
 $certifications = $certificationsParam ? array_filter(array_map('trim', explode(',', $certificationsParam))) : [];
+$subtitleLanguages = $subtitlesParam ? array_filter(array_map('trim', explode(',', $subtitlesParam))) : [];
 
 // Cap limit to prevent abuse
 $limit = min($limit, 100);
@@ -374,6 +476,35 @@ if ($yearFrom > 0) {
 if ($yearTo > 0) {
     $conditions[] = "CAST(YEAR AS UNSIGNED) <= :year_to";
     $advancedBindings[':year_to'] = $yearTo;
+}
+if ($decade > 0) {
+    $conditions[] = "CAST(YEAR AS UNSIGNED) BETWEEN :decade_from AND :decade_to";
+    $advancedBindings[':decade_from'] = $decade;
+    $advancedBindings[':decade_to'] = $decade + 9;
+}
+// Subtitle filters need the column; without it "has subtitles" can only be empty.
+if ($subPresenceParam !== '' || !empty($subtitleLanguages)) {
+    if ($quoteSubtitles === null) {
+        if ($subPresenceParam === '0' && empty($subtitleLanguages)) {
+            // no column means nothing is recorded - "no subtitles" matches everything
+        } else {
+            $conditions[] = '1 = 0';
+        }
+    } else {
+        if ($subPresenceParam === '1') {
+            $conditions[] = "($quoteSubtitles IS NOT NULL AND TRIM($quoteSubtitles) != '' AND $quoteSubtitles <> 'None')";
+        } elseif ($subPresenceParam === '0') {
+            $conditions[] = "($quoteSubtitles IS NULL OR TRIM($quoteSubtitles) = '' OR $quoteSubtitles = 'None')";
+        }
+        if (!empty($subtitleLanguages)) {
+            $subConditions = [];
+            foreach ($subtitleLanguages as $i => $language) {
+                $subConditions[] = "$quoteSubtitles LIKE :sub$i";
+                $advancedBindings[":sub$i"] = '%' . escapeLike($language) . '%';
+            }
+            $conditions[] = '(' . implode(' OR ', $subConditions) . ')';
+        }
+    }
 }
 if ($ratingFrom > 0) {
     $conditions[] = "COALESCE(NULLIF(USERRATING, ''), RATING) >= :rating_from";
@@ -533,6 +664,163 @@ echo json_encode([
 // ===== HELPER FUNCTIONS =====
 
 /**
+ * Parse a free-text runtime ("2h 30m", "2h30m", "120 min", "2:30") into minutes.
+ */
+function parseRuntimeMinutes(string $length): int
+{
+    $length = trim($length);
+    if ($length === '') {
+        return 0;
+    }
+
+    // "2h 30m" / "2h30m" / "2 hours 30 minutes" / "2h" / "2h30"
+    // The minutes part is optional: a plain "2h" used to parse as 0 minutes.
+    if (preg_match('/(\d+)\s*h(?:ours?)?(?:\s*(\d+)\s*(?:m(?:in(?:utes?)?)?)?)?/i', $length, $m)) {
+        return ((int)$m[1] * 60) + (isset($m[2]) ? (int)$m[2] : 0);
+    }
+    // "120 min" / "120min" / "120"
+    if (preg_match('/^(\d+)\s*(?:min(?:utes?)?)?$/i', $length, $m)) {
+        return (int)$m[1];
+    }
+    // "2:30" (hours:minutes)
+    if (preg_match('/^(\d+):(\d+)$/', $length, $m)) {
+        return ((int)$m[1] * 60) + (int)$m[2];
+    }
+
+    return 0;
+}
+
+/**
+ * Total runtime of every movie in the table, in minutes.
+ */
+function sumRuntimeMinutes(PDO $pdo, string $table): int
+{
+    $stmt = $pdo->prepare("SELECT LENGTH FROM $table WHERE LENGTH IS NOT NULL AND LENGTH != ''");
+    $stmt->execute();
+
+    $total = 0;
+    while ($row = $stmt->fetch()) {
+        $total += parseRuntimeMinutes((string)$row['LENGTH']);
+    }
+    return $total;
+}
+
+/**
+ * Format minutes as "3d 4h" / "5h 30m" / "45m".
+ */
+function formatRuntime(int $minutes): string
+{
+    $hours = intdiv($minutes, 60);
+    $days = intdiv($hours, 24);
+
+    if ($days > 0) {
+        return $days . 'd ' . ($hours % 24) . 'h';
+    }
+    if ($hours > 0) {
+        return $hours . 'h ' . ($minutes % 60) . 'm';
+    }
+    return ($minutes % 60) . 'm';
+}
+
+/**
+ * Collapse a [{year, count, avgRating}] series into per-decade totals.
+ */
+function buildDecadeSeries(array $byYear): array
+{
+    $decades = [];
+
+    foreach ($byYear as $row) {
+        $decade = (int)(floor($row['year'] / 10) * 10);
+        if (!isset($decades[$decade])) {
+            $decades[$decade] = ['decade' => $decade, 'count' => 0, 'ratingSum' => 0.0, 'ratingCount' => 0];
+        }
+        $decades[$decade]['count'] += (int)$row['count'];
+        if ($row['avgRating'] !== null) {
+            // Weight each year's average by its movie count
+            $decades[$decade]['ratingSum'] += ((float)$row['avgRating']) * (int)$row['count'];
+            $decades[$decade]['ratingCount'] += (int)$row['count'];
+        }
+    }
+
+    ksort($decades);
+
+    return array_values(array_map(function ($d) {
+        return [
+            'decade' => $d['decade'],
+            'count' => $d['count'],
+            'avgRating' => $d['ratingCount'] > 0 ? round($d['ratingSum'] / $d['ratingCount'], 1) : null
+        ];
+    }, $decades));
+}
+
+/**
+ * Top values of one column, ignoring empty ones.
+ */
+function fetchTopGroups(PDO $pdo, string $table, string $column, int $limit): array
+{
+    $allowedColumns = ['CATEGORY', 'COUNTRY', 'DIRECTOR', 'ACTORS'];
+    if (!in_array($column, $allowedColumns, true)) {
+        return [];
+    }
+
+    $stmt = $pdo->prepare("SELECT `$column` AS label, COUNT(*) AS count
+                           FROM $table
+                           WHERE `$column` IS NOT NULL AND `$column` != ''
+                           GROUP BY `$column`
+                           ORDER BY count DESC, label ASC
+                           LIMIT :limit");
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return array_map(function ($row) {
+        return ['label' => $row['label'], 'count' => (int)$row['count']];
+    }, $stmt->fetchAll());
+}
+
+/**
+ * Find the real name of one of $candidates on $table, or null when the column
+ * does not exist / information_schema is not readable.
+ *
+ * The returned name is always one of $candidates (not whatever the database
+ * reports), and it is re-validated before being interpolated into SQL, so it is
+ * safe to use inside backticks.
+ */
+function findColumn(PDO $pdo, string $table, array $candidates): ?string
+{
+    $placeholders = implode(',', array_fill(0, count($candidates), '?'));
+    $sql = "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ($placeholders)";
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_merge([$table], $candidates));
+        $found = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (\PDOException $e) {
+        return null;
+    }
+
+    foreach ($candidates as $candidate) {
+        foreach ($found as $name) {
+            if (strcasecmp($candidate, (string)$name) === 0 && preg_match('/^[A-Za-z0-9_]+$/', $candidate)) {
+                return $candidate;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Look for a column that records when a movie was added, so "growth" can mean
+ * acquisition rather than release.
+ */
+function findDateColumn(PDO $pdo, string $table): ?string
+{
+    return findColumn($pdo, $table, ['DATEADDED', 'DATE_ADDED', 'ADDEDDATE', 'ADDED', 'IMPORTDATE',
+                                     'IMPORT_DATE', 'CREATEDAT', 'CREATED_AT', 'CREATEDON', 'DATE_CREATED']);
+}
+
+/**
  * Resolve the table to query from the archive flag, whitelisted against
  * the configured table (never interpolate an untrusted table name).
  * Returns null when the resulting table name is not whitelisted.
@@ -597,6 +885,7 @@ function mapMovieRow(array $row, bool $useParipakva, array $posterConfig, string
         'audio' => $row['AUDIOFORMAT'] ?? '',
         'filepath' => $row['FILEPATH'] ?? '',
         'external_url' => $externalUrl,
+        'subtitles' => $row['SUBTITLES'] ?? '',
         'source' => $useParipakva ? 'paripakva' : 'movies'
     ];
 }

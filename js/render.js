@@ -136,6 +136,12 @@ function renderGrid(movies, append = false) {
             posterWrapper.appendChild(createBadge(`📅 ${movie.year}`, 'badge-year'));
         }
 
+        // Subtitle summary badge (subtitles.js owns the parsing/formatting)
+        if (typeof getSubtitleCardBadge === 'function') {
+            const subBadge = getSubtitleCardBadge(movie.subtitles);
+            if (subBadge) posterWrapper.appendChild(subBadge);
+        }
+
         // Hover Info
         const hoverInfo = createElement('div', 'hover-info');
         const descSize = 180;
@@ -183,6 +189,18 @@ function renderGrid(movies, append = false) {
             }
         });
         card.appendChild(favBtn);
+
+        // Compare toggle (compare.js owns the list state)
+        if (typeof toggleCompareMovie === 'function') {
+            const compareBtn = createElement('button', 'compare-card-btn' + (isMovieInCompare(movie.num) ? ' active' : ''), '⚖');
+            compareBtn.dataset.num = movie.num;
+            compareBtn.title = isMovieInCompare(movie.num) ? 'Remove from comparison' : 'Add to comparison';
+            compareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleCompareMovie(movie);
+            });
+            card.appendChild(compareBtn);
+        }
 
         card.addEventListener('click', () => openModal(movie));
         grid.appendChild(card);
@@ -239,6 +257,18 @@ function renderTable(movies, append = false) {
             }
         });
         tdFav.appendChild(favBtn);
+
+        // Compare toggle in list view too
+        if (typeof toggleCompareMovie === 'function') {
+            const compareBtn = createElement('button', 'compare-card-btn compare-list-btn' + (isMovieInCompare(movie.num) ? ' active' : ''), '⚖');
+            compareBtn.dataset.num = movie.num;
+            compareBtn.title = isMovieInCompare(movie.num) ? 'Remove from comparison' : 'Add to comparison';
+            compareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleCompareMovie(movie);
+            });
+            tdFav.appendChild(compareBtn);
+        }
 
         const tdNum = createElement('td', 'num-cell', `#${movie.num}`);
         Object.assign(tdNum.style, { fontWeight: '600', color: 'var(--accent)', minWidth: '50px' });

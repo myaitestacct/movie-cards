@@ -82,6 +82,7 @@ function setJumpButtonsDisabled(selector, disabled) {
 function renderJumpResults(movies, positionLabel) {
     hasMoreResults = false;
     currentOffset = 0;
+    currentMovies = movies;   // slideshow/analytics follow the jump result set
     renderGrid(movies);
     currentPosition.textContent = positionLabel;
     contentArea.scrollTop = 0;

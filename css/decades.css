@@ -1,0 +1,96 @@
+/* ============================================
+   DECADE BAR: "Movies by decade" chips
+   Mirrors the genre chip bar so both rows read
+   as one family of filters.
+   ============================================ */
+
+.decade-filters {
+    display: flex;
+    gap: 8px;
+    padding: 0.5rem 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    max-height: 200px;
+    opacity: 1;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 0 12px 12px 0;
+    border-left: none;
+    transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease, margin 0.35s ease;
+}
+
+.decade-filters::-webkit-scrollbar { height: 4px; }
+.decade-filters::-webkit-scrollbar-track { background: transparent; }
+.decade-filters::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.decade-chip {
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.decade-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.decade-chip.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(229, 9, 20, 0.35);
+}
+
+.decade-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Light theme ------------------------------------------------------------- */
+
+body.light-theme .decade-chip {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #666;
+}
+
+body.light-theme .decade-chip:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1a1a1a;
+}
+
+body.light-theme .decade-filters {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .decade-filters {
+        padding: 0.4rem 0.5rem;
+        gap: 6px;
+    }
+
+    .decade-chip {
+        padding: 5px 12px;
+        font-size: 0.75rem;
+    }
+}

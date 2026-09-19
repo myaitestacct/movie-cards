@@ -34,6 +34,10 @@ document.addEventListener('click', (e) => {
 
 // --- Collect Filter Values ---
 function collectAdvancedFilters() {
+    // The "Any" radio carries -1; the API treats an empty value as "no constraint"
+    const presenceRadio = document.querySelector('input[name="filter-sub-presence"]:checked');
+    const subPresence = presenceRadio ? presenceRadio.value : '';
+
     const filters = {
         yearFrom: document.getElementById('filter-year-from').value,
         yearTo: document.getElementById('filter-year-to').value,
@@ -46,7 +50,9 @@ function collectAdvancedFilters() {
         actors: document.getElementById('filter-actors').value.trim(),
         sizeFrom: document.getElementById('filter-size-from').value,
         sizeTo: document.getElementById('filter-size-to').value,
-        certifications: Array.from(document.querySelectorAll('.filter-cert:checked')).map(cb => cb.value)
+        certifications: Array.from(document.querySelectorAll('.filter-cert:checked')).map(cb => cb.value),
+        subtitles: Array.from(document.querySelectorAll('.filter-sub-lang:checked')).map(cb => cb.value),
+        subPresence: subPresence === '-1' ? '' : subPresence
     };
     return filters;
 }
@@ -73,10 +79,13 @@ function clearAdvancedFilters() {
     document.getElementById('filter-size-from').value = '';
     document.getElementById('filter-size-to').value = '';
     
-    document.querySelectorAll('.filter-resolution, .filter-audio, .filter-cert').forEach(cb => {
+    document.querySelectorAll('.filter-resolution, .filter-audio, .filter-cert, .filter-sub-lang').forEach(cb => {
         cb.checked = false;
     });
-    
+
+    const anyPresence = document.querySelector('input[name="filter-sub-presence"][value="-1"]');
+    if (anyPresence) anyPresence.checked = true;
+
     advancedFilters = {
         yearFrom: '',
         yearTo: '',
@@ -89,7 +98,9 @@ function clearAdvancedFilters() {
         actors: '',
         sizeFrom: '',
         sizeTo: '',
-        certifications: []
+        certifications: [],
+        subtitles: [],
+        subPresence: ''
     };
     
     updateFilterCount();
@@ -114,6 +125,8 @@ function updateFilterCount() {
     if (advancedFilters.sizeFrom) count++;
     if (advancedFilters.sizeTo) count++;
     if (advancedFilters.certifications.length > 0) count++;
+    if (advancedFilters.subtitles.length > 0) count++;
+    if (advancedFilters.subPresence !== '' && advancedFilters.subPresence !== undefined) count++;
     
     // hasAdvancedFilters() is the single source of truth for "is anything active"
     if (hasAdvancedFilters()) {
@@ -158,7 +171,13 @@ function buildAdvancedFilterParams() {
     if (advancedFilters.certifications.length > 0) {
         params.set('certifications', advancedFilters.certifications.join(','));
     }
-    
+    if (advancedFilters.subtitles && advancedFilters.subtitles.length > 0) {
+        params.set('subtitles', advancedFilters.subtitles.join(','));
+    }
+    if (advancedFilters.subPresence !== '' && advancedFilters.subPresence !== undefined) {
+        params.set('sub_presence', advancedFilters.subPresence);
+    }
+
     return params.toString();
 }
 
@@ -176,6 +195,8 @@ function hasAdvancedFilters() {
         advancedFilters.actors ||
         advancedFilters.sizeFrom ||
         advancedFilters.sizeTo ||
-        advancedFilters.certifications.length > 0
+        advancedFilters.certifications.length > 0 ||
+        advancedFilters.subtitles.length > 0 ||
+        advancedFilters.subPresence !== ''
     );
 }

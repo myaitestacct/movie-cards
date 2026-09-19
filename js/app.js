@@ -38,7 +38,9 @@ document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'k') {
         showParipakva = !showParipakva;
         currentCategory = '';
+        currentDecade = '';
         fetchCategories();
+        fetchDecades();
         fetchMovies(searchInput.value, 0, false);
         console.log(`Paripakva ${showParipakva ? 'enabled' : 'disabled'}`);
         return;
@@ -87,6 +89,8 @@ loadFromURL();
 
 // Load data
 fetchCategories();
+fetchDecades();
+loadSavedCompare();
 fetchStats();
 fetchMovies(searchInput.value, 0, false);
 

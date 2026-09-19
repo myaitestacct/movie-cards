@@ -24,6 +24,13 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// --- Escape a value for use inside an HTML attribute ---
+function escapeAttr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // --- Highlight search term in text ---
 function highlightSearchTerm(text, searchTerm) {
     if (!text || !searchTerm) return escapeHtml(text);
@@ -57,6 +64,13 @@ function showLoadingSpinner() {
 function hideLoadingSpinner() {
     const spinner = contentArea.querySelector('.loading-spinner');
     if (spinner) spinner.remove();
+}
+
+// --- Is the user typing into a form control? ---
+function isTypingTarget() {
+    const el = document.activeElement;
+    if (!el) return false;
+    return el === searchInput || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
 // --- Toast Notifications ---
