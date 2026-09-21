@@ -32,6 +32,17 @@ var compareList = [];            // movies queued for side-by-side comparison
 var THEME_KEY = 'movielib_theme';
 var COLLAPSE_KEY = 'movielib_collapsed';
 
+// --- Movie Index Cache (see index-cache.js) ---
+var movieIndex = [];             // compact [{num,title,year}] list of the current source
+var movieIndexSource = null;     // 'movies' | 'paripakva' — what movieIndex currently holds
+var INDEX_CACHE_PREFIX = 'movielib_index_v1_';
+var INDEX_CACHE_TTL_MS = 12 * 60 * 60 * 1000;  // background-refresh after 12h
+
+// --- Pagination / Page Jump State ---
+var lastTotalMatches = 0;        // size of the current result set (for page math)
+var lastFetchOffset = 0;         // offset of the last non-append fetch (top of the window)
+var pendingPageOffset = 0;       // offset restored from the URL hash on load
+
 // --- Advanced Filters State ---
 var advancedFilters = {
     yearFrom: '',

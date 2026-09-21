@@ -254,6 +254,38 @@ if ($action === 'decades') {
     exit;
 }
 
+// ===== INDEX: compact full-collection list for client-side caching =====
+// Returns every movie as {num, title, year} ordered by NUM ASC. The frontend
+// caches this (memory + localStorage) so letter/decade browsing and page
+// previews work instantly and without the 100-row endpoint cap. Keep the
+// payload lean: no descriptions, posters or other heavy fields.
+if ($action === 'index') {
+    try {
+        $stmt = $pdo->prepare("SELECT NUM, FORMATTEDTITLE, YEAR FROM $tableToQuery ORDER BY NUM ASC");
+        $stmt->execute();
+
+        $movies = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $movies[] = [
+                'num'   => (int)$row['NUM'],
+                'title' => (string)($row['FORMATTEDTITLE'] ?? ''),
+                'year'  => $row['YEAR'] !== null ? (string)$row['YEAR'] : '',
+            ];
+        }
+
+        echo json_encode([
+            'success' => true,
+            'source'  => $useParipakva ? 'paripakva' : 'movies',
+            'count'   => count($movies),
+            'movies'  => $movies,
+        ]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to build index']);
+    }
+    exit;
+}
+
 // ===== QUICK JUMP ACTIONS =====
 
 // Jump to a single movie by its NUM

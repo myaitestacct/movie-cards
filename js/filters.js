@@ -12,6 +12,10 @@ function updateURL() {
     if (currentDecade) params.set('decade', currentDecade);
     if (showParipakva) params.set('archive', '1');
 
+    // Persist the top of the visible window so page jumps are shareable
+    const page = Math.floor(lastFetchOffset / currentLimit) + 1;
+    if (page > 1) params.set('page', String(page));
+
     const hash = params.toString();
     const newURL = hash ? `${window.location.pathname}#${hash}` : window.location.pathname;
     history.replaceState(null, '', newURL);
@@ -19,6 +23,8 @@ function updateURL() {
 
 // --- URL State: Restore state from URL hash ---
 function loadFromURL() {
+    pendingPageOffset = 0;
+
     const hash = window.location.hash.slice(1);
     if (!hash) return false;
 
@@ -29,12 +35,14 @@ function loadFromURL() {
     const archive = params.get('archive') || '0';
     const favs = params.get('favs') || '0';
     const decade = params.get('decade') || '';
+    const page = Math.max(1, parseInt(params.get('page'), 10) || 1);
 
     searchInput.value = q;
     currentSort = sort;
     currentCategory = favs === '1' ? '__favorites__' : genre;
     currentDecade = decade;
     showParipakva = archive === '1';
+    pendingPageOffset = (page - 1) * currentLimit;
 
     sortSelect.value = currentSort;
     return true;

@@ -92,10 +92,10 @@ fetchCategories();
 fetchDecades();
 loadSavedCompare();
 fetchStats();
-fetchMovies(searchInput.value, 0, false);
+fetchMovies(searchInput.value, pendingPageOffset, false);
 
 // Handle browser back/forward buttons
 window.addEventListener('hashchange', () => {
     loadFromURL();
-    fetchMovies(searchInput.value, 0, false);
+    fetchMovies(searchInput.value, pendingPageOffset, false);
 });

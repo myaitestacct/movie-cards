@@ -49,24 +49,34 @@ async function fetchMovies(query = '', offset = 0, append = false) {
         // analytics and quick jump all read it)
         currentMovies = append ? currentMovies.concat(movies) : movies;
 
+        // Page-jump bookkeeping: remember the result set size and where the
+        // current window starts (unchanged by infinite-scroll appends).
+        lastTotalMatches = result.totalMatches || 0;
+        if (!append) lastFetchOffset = offset;
+
         hideLoadingSpinner();
 
-        // Display total results
+        // Display total results as a position range ("Showing 1,901–1,950 of 4,096")
         const totalEl = document.getElementById('search-results-count');
-        const shownCount = append ? currentOffset + movies.length : movies.length;
+        const endPos = offset + movies.length;
+        const startPos = append ? 1 : offset + 1;
+        const rangeLabel = movies.length > 0
+            ? `${startPos.toLocaleString()}–${endPos.toLocaleString()}`
+            : '0';
+        const totalLabel = (result.totalMatches || 0).toLocaleString();
 
         if (query && currentCategory === '__favorites__') {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} favorite(s) matching "${query}"`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} favorite(s) matching "${query}"`;
         } else if (query && currentCategory) {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} result(s) for "${query}" in ${currentCategory}`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} result(s) for "${query}" in ${currentCategory}`;
         } else if (query) {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} result(s) for "${query}"`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} result(s) for "${query}"`;
         } else if (currentCategory === '__favorites__') {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} favorite(s)`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} favorite(s)`;
         } else if (currentCategory) {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} in ${currentCategory}`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} in ${currentCategory}`;
         } else {
-            totalEl.textContent = `Showing ${shownCount} of ${result.totalMatches || 0} movies`;
+            totalEl.textContent = `Showing ${rangeLabel} of ${totalLabel} movies`;
         }
 
         // Remove loading indicator
@@ -94,6 +104,10 @@ async function fetchMovies(query = '', offset = 0, append = false) {
 
         updateBreadcrumb();
         updateURL();
+
+        // Keep the Quick Jump panel position/page indicators in sync
+        if (typeof updatePositionLabel === 'function') updatePositionLabel();
+        if (typeof refreshPageTabStatus === 'function') refreshPageTabStatus();
     } catch (err) {
         console.error('Fetch error:', err);
         hideLoadingSpinner();
@@ -175,6 +189,7 @@ async function fetchStats() {
         const response = await fetch(`api.php?action=stats&archive=${includeArchive}`);
         if (!response.ok) return;
         const result = await response.json();
+        if (typeof validateMovieIndexCount === 'function') validateMovieIndexCount(result.totalMovies);
         const favCount = getFavorites().length;
         statsBar.innerHTML = `
             <div class="stat-item">
