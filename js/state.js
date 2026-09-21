@@ -10,6 +10,7 @@ var modal = document.getElementById('movie-modal');
 var closeModal = document.getElementById('close-modal');
 var modalBody = document.getElementById('modal-body');
 var sortSelect = document.getElementById('sort-select');
+var limitSelect = document.getElementById('limit-select');
 var genreFilters = document.getElementById('genre-filters');
 
 // --- State Variables (var = global across script files) ---
@@ -31,6 +32,8 @@ var COMPARE_KEY = 'movielib_compare';
 var compareList = [];            // movies queued for side-by-side comparison
 var THEME_KEY = 'movielib_theme';
 var COLLAPSE_KEY = 'movielib_collapsed';
+var LIMIT_KEY = 'movielib_page_size';
+var PAGE_SIZE_OPTIONS = [25, 50, 100];   // server caps page size at 100
 
 // --- Movie Index Cache (see index-cache.js) ---
 var movieIndex = [];             // compact [{num,title,year}] list of the current source

@@ -11,6 +11,7 @@
 }
 
 .movie-card {
+    position: relative;   /* anchor for the absolute fav/compare buttons */
     display: flex;
     flex-direction: column;
     width: 100%;

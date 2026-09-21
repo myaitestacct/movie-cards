@@ -112,7 +112,8 @@
 .sort-controls { display: flex; align-items: center; gap: 8px; }
 .sort-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 400; white-space: nowrap; }
 
-#sort-select {
+#sort-select,
+#limit-select {
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--glass-border);
     padding: 0.5rem 2rem 0.5rem 0.8rem;
@@ -130,7 +131,13 @@
     background-position: right 8px center;
 }
 
-#sort-select:focus { border-color: var(--accent); }
+#sort-select:focus,
+#limit-select:focus { border-color: var(--accent); }
+
+/* Per-page selector is compact — numbers only */
+#limit-select {
+    padding-right: 1.8rem;
+}
 #sort-select:hover { border-color: rgba(255,255,255,0.2); }
 #sort-select option { background: #1a1a1a; color: white; padding: 0.5rem; }
 
