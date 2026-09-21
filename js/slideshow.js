@@ -2,7 +2,15 @@
 // SLIDESHOW: fullscreen poster slideshow (P)
 // ============================================
 
-const SLIDESHOW_INTERVAL = 5000;   // ms per slide while playing
+let SLIDESHOW_INTERVAL = 5000;     // ms per slide while playing (2/3/5/10 s, user selectable)
+const SLIDESHOW_INTERVAL_KEY = 'movielib_slideshow_interval';
+const SLIDESHOW_INTERVAL_CHOICES = [2000, 3000, 5000, 10000];
+
+// Restore the previously chosen speed (feature lost in the code recovery)
+const savedSlideshowInterval = parseInt(localStorage.getItem(SLIDESHOW_INTERVAL_KEY), 10);
+if (SLIDESHOW_INTERVAL_CHOICES.includes(savedSlideshowInterval)) {
+    SLIDESHOW_INTERVAL = savedSlideshowInterval;
+}
 
 let slideshowIndex = 0;
 let slideshowTimer = null;
@@ -46,6 +54,14 @@ slideshowOverlay.innerHTML = `
                 <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
         </button>
+        <label class="slideshow-speed" title="Seconds per slide">
+            <select class="slideshow-speed-select" aria-label="Seconds per slide">
+                <option value="2000">2s</option>
+                <option value="3000">3s</option>
+                <option value="5000">5s</option>
+                <option value="10000">10s</option>
+            </select>
+        </label>
         <button type="button" class="slideshow-btn slideshow-full" title="Fullscreen (F)" aria-label="Fullscreen">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -75,6 +91,10 @@ const slideshowCounter = slideshowOverlay.querySelector('.slideshow-counter');
 const slideshowProgressFill = slideshowOverlay.querySelector('.slideshow-progress-fill');
 const slideshowLoading = slideshowOverlay.querySelector('.slideshow-loading');
 const slideshowToggleBtn = slideshowOverlay.querySelector('.slideshow-toggle');
+const slideshowSpeedSelect = slideshowOverlay.querySelector('.slideshow-speed-select');
+
+// Sync the selector with the restored speed
+slideshowSpeedSelect.value = String(SLIDESHOW_INTERVAL);
 
 // --- Helpers ---
 function isSlideshowOpen() {
@@ -103,6 +123,13 @@ function restartProgressBar() {
     void slideshowProgressFill.offsetWidth;
     slideshowProgressFill.style.animation = '';
 }
+
+// The progress-bar sweep reads --slideshow-interval for its duration, so the
+// bar always matches the timer period.
+function applySlideshowInterval() {
+    slideshowOverlay.style.setProperty('--slideshow-interval', SLIDESHOW_INTERVAL + 'ms');
+}
+applySlideshowInterval();
 
 function showSlide(index) {
     const movie = currentSlideshowMovie();
@@ -271,6 +298,20 @@ slideshowToggleBtn.addEventListener('click', toggleSlideshowPlay);
 slideshowOverlay.querySelector('.slideshow-full').addEventListener('click', toggleFullscreen);
 slideshowOverlay.querySelector('.slideshow-close').addEventListener('click', closeSlideshow);
 
+// Speed selector: 2 / 3 / 5 / 10 seconds per slide
+slideshowSpeedSelect.addEventListener('change', () => {
+    const ms = parseInt(slideshowSpeedSelect.value, 10);
+    if (!SLIDESHOW_INTERVAL_CHOICES.includes(ms)) return;
+
+    SLIDESHOW_INTERVAL = ms;
+    localStorage.setItem(SLIDESHOW_INTERVAL_KEY, String(ms));
+    applySlideshowInterval();
+
+    // Restart whatever is running so the new speed applies immediately
+    if (isSlideshowPlaying()) startSlideshowTimer();
+    restartProgressBar();
+});
+
 // Clicking the backdrop (not the poster/info) exits
 slideshowOverlay.addEventListener('click', (e) => {
     if (e.target === slideshowOverlay || e.target.classList.contains('slideshow-stage')) {
@@ -298,8 +339,10 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keydown', (e) => {
     if (!isSlideshowOpen()) return;
 
-    // Let focused overlay buttons respond to Space/Enter normally
+    // Let focused overlay buttons respond to Space/Enter normally, and leave
+    // the speed select's own keyboard interaction (arrows, typing) alone
     const onButton = e.target instanceof HTMLElement && e.target.tagName === 'BUTTON';
+    const onSpeedSelect = e.target === slideshowSpeedSelect;
 
     switch (e.key) {
         case 'Escape':
@@ -311,6 +354,7 @@ document.addEventListener('keydown', (e) => {
             return;
         case 'ArrowRight':
         case 'ArrowDown':
+            if (onSpeedSelect) return;   // the select is being keyboard-driven
             e.preventDefault();
             e.stopPropagation();
             nextSlide();
@@ -318,6 +362,7 @@ document.addEventListener('keydown', (e) => {
             return;
         case 'ArrowLeft':
         case 'ArrowUp':
+            if (onSpeedSelect) return;   // the select is being keyboard-driven
             e.preventDefault();
             e.stopPropagation();
             prevSlide();
@@ -331,7 +376,7 @@ document.addEventListener('keydown', (e) => {
             return;
         case ' ':
         case 'Spacebar':
-            if (onButton) return;   // the focused button handles it
+            if (onButton || onSpeedSelect) return;   // the focused control handles it
             e.preventDefault();
             e.stopPropagation();
             toggleSlideshowPlay();

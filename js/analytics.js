@@ -333,7 +333,13 @@ function toggleAnalytics() {
     else openAnalytics();
 }
 
-document.getElementById('btn-analytics').addEventListener('click', toggleAnalytics);
+// Growth launcher: the "Growth" stat at the end of the stats bar
+// (rendered by fetchStats in api.js). Delegated on document so the
+// listener survives stats-bar re-renders (favorites, archive mode…).
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#stat-growth')) toggleAnalytics();
+});
+
 analyticsCloseBtn.addEventListener('click', closeAnalytics);
 
 analyticsOverlay.addEventListener('click', (e) => {

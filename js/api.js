@@ -201,6 +201,19 @@ async function fetchStats() {
                 <span class="stat-value">${escapeHtml(result.topGenre)}</span>
                 <span class="stat-label">Top Genre (${result.topGenreCount})</span>
             </div>
+            <div class="stat-divider"></div>
+            <button type="button" id="stat-growth" class="stat-item stat-growth"
+                    title="Collection Growth &amp; Timeline Analytics (Y)"
+                    aria-label="Open collection growth and timeline analytics">
+                <span class="stat-value stat-growth-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                </span>
+                <span class="stat-label">Growth</span>
+            </button>
         `;
     } catch (err) {
         console.warn('Failed to load stats:', err);
