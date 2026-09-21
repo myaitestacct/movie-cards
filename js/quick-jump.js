@@ -303,7 +303,9 @@ async function jumpToLetter(letter) {
     setJumpButtonsDisabled('.jump-letter-btn', true);
 
     try {
-        await ensureMovieIndex();
+        // The index of the source the user is looking at, even if the source
+        // switched while the fetch was in flight (see index-cache.js).
+        await ensureCurrentMovieIndex();
         const matches = indexMoviesStartingWith(letter);
         renderIndexResults(jumpLetterResults, matches);
 
@@ -358,7 +360,7 @@ async function jumpToDecade(decade) {
     setJumpButtonsDisabled('.jump-decade-btn', true);
 
     try {
-        await ensureMovieIndex();
+        await ensureCurrentMovieIndex();
         const matches = indexMoviesInDecade(decade);
         renderIndexResults(jumpDecadeResults, matches);
 

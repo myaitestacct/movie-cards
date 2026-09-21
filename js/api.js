@@ -26,9 +26,25 @@ function buildMoviesUrl(query = '', offset = 0) {
 }
 
 // --- Fetch Movies from API ---
+// Every call takes a sequence number instead of waiting behind a boolean lock.
+// A newer request (sort, genre, decade, view, archive, page jump, ...) always
+// starts, and an older one that finishes later is discarded, so the list on
+// screen can never be the result of a request the user has already moved on
+// from. Appends are the one exception: they extend the window that is already
+// rendered, so only one may be in flight at a time.
 async function fetchMovies(query = '', offset = 0, append = false) {
-    if (isLoading) return;
-    isLoading = true;
+    if (append && isLoading) {
+        // An append that was skipped must not leave the Load More button stuck
+        // in its disabled "Loading..." state, or infinite scroll stops for good.
+        const loadBtn = contentArea.querySelector('.load-more-btn');
+        if (loadBtn) {
+            loadBtn.disabled = false;
+            loadBtn.textContent = 'Load More Movies';
+        }
+        return;
+    }
+
+    const requestId = ++fetchRequestSeq;
 
     try {
         if (!append) {
@@ -37,11 +53,19 @@ async function fetchMovies(query = '', offset = 0, append = false) {
             hasMoreResults = true;
             showLoadingSpinner();
         }
+        isLoading = true;
 
         const response = await fetch(buildMoviesUrl(query, offset));
 
+        // Superseded while the request was in flight: drop the result entirely.
+        if (requestId !== fetchRequestSeq) return;
+
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const result = await response.json();
+
+        // Superseded while the body was being read (as above).
+        if (requestId !== fetchRequestSeq) return;
+
         const movies = result.movies || [];
         hasMoreResults = result.hasMore === true;
 
@@ -109,6 +133,7 @@ async function fetchMovies(query = '', offset = 0, append = false) {
         if (typeof updatePositionLabel === 'function') updatePositionLabel();
         if (typeof refreshPageTabStatus === 'function') refreshPageTabStatus();
     } catch (err) {
+        if (requestId !== fetchRequestSeq) return;
         console.error('Fetch error:', err);
         hideLoadingSpinner();
         if (!append) {
@@ -118,7 +143,9 @@ async function fetchMovies(query = '', offset = 0, append = false) {
             contentArea.appendChild(errEl);
         }
     } finally {
-        isLoading = false;
+        // Only the newest request owns the global loading flag; an older one
+        // finishing late must not unlock the UI for a request still in flight.
+        if (requestId === fetchRequestSeq) isLoading = false;
     }
 }
 
@@ -198,7 +225,7 @@ async function fetchStats() {
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-                <span class="stat-value">${favCount}</span>
+                <span class="stat-value" id="stat-favorites">${favCount}</span>
                 <span class="stat-label">Favorites</span>
             </div>
             <div class="stat-divider"></div>
@@ -233,4 +260,14 @@ async function fetchStats() {
     } catch (err) {
         console.warn('Failed to load stats:', err);
     }
+}
+
+// --- Refresh just the favorites counter in the stats bar ---
+// Toggling a heart only changes a number that is already known locally. It used
+// to call fetchStats(), which re-runs the collection-wide aggregates on the
+// server (total, average rating, per-genre counts, total runtime) for a badge
+// that did not need any of them.
+function updateStatsFavorites() {
+    const el = document.getElementById('stat-favorites');
+    if (el) el.textContent = String(getFavorites().length);
 }

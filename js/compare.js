@@ -8,7 +8,14 @@ const MAX_COMPARE_ITEMS = 4;
 function loadSavedCompare() {
     try {
         const saved = JSON.parse(localStorage.getItem(COMPARE_KEY));
-        if (Array.isArray(saved)) compareList = saved;
+        if (Array.isArray(saved)) {
+            // Normalise the ids on the way in: a saved list from before NUM was
+            // typed as a number holds strings, and every lookup below compares
+            // against movie.num (a number) or a parseInt()ed dataset value.
+            compareList = saved
+                .filter(m => m && toMovieNum(m.num) !== null)
+                .map(m => Object.assign({}, m, { num: toMovieNum(m.num) }));
+        }
     } catch (e) {
         compareList = [];
     }
@@ -21,9 +28,10 @@ function saveCompareList() {
 
 // --- Toggle Movie in Compare List ---
 function toggleCompareMovie(movie) {
-    if (!movie || !movie.num) return false;
+    const num = movie ? toMovieNum(movie.num) : null;
+    if (num === null) return false;
 
-    const idx = compareList.findIndex(m => m.num === movie.num);
+    const idx = compareList.findIndex(m => toMovieNum(m.num) === num);
     if (idx >= 0) {
         compareList.splice(idx, 1);
         showToast(`Removed "${movie.title}" from comparison`, 'info');
@@ -32,18 +40,19 @@ function toggleCompareMovie(movie) {
             showToast(`You can compare up to ${MAX_COMPARE_ITEMS} movies at a time`, 'warning');
             return false;
         }
-        compareList.push(movie);
+        compareList.push(Object.assign({}, movie, { num }));
         showToast(`Added "${movie.title}" to comparison (${compareList.length}/${MAX_COMPARE_ITEMS})`, 'success');
     }
 
     saveCompareList();
     updateCompareBarUI();
     updateCompareButtonsOnCards();
-    return compareList.some(m => m.num === movie.num);
+    return compareList.some(m => toMovieNum(m.num) === num);
 }
 
 function isMovieInCompare(num) {
-    return compareList.some(m => m.num === num);
+    const wanted = toMovieNum(num);
+    return wanted !== null && compareList.some(m => toMovieNum(m.num) === wanted);
 }
 
 function clearCompareList() {
@@ -314,7 +323,7 @@ function renderCompareMatrix(dialog) {
             const num = parseInt(btn.dataset.num);
             const isFav = toggleFavorite(num);
             btn.classList.toggle('active', isFav);
-            fetchStats();
+            updateStatsFavorites();
             updateFavoritesChipCount();
         });
     });

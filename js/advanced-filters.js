@@ -67,26 +67,9 @@ function applyAdvancedFilters() {
 
 advFiltersApply.addEventListener('click', applyAdvancedFilters);
 
-// --- Clear All Filters ---
-function clearAdvancedFilters() {
-    document.getElementById('filter-year-from').value = '';
-    document.getElementById('filter-year-to').value = '';
-    document.getElementById('filter-rating-from').value = '';
-    document.getElementById('filter-rating-to').value = '';
-    document.getElementById('filter-country').value = '';
-    document.getElementById('filter-director').value = '';
-    document.getElementById('filter-actors').value = '';
-    document.getElementById('filter-size-from').value = '';
-    document.getElementById('filter-size-to').value = '';
-    
-    document.querySelectorAll('.filter-resolution, .filter-audio, .filter-cert, .filter-sub-lang').forEach(cb => {
-        cb.checked = false;
-    });
-
-    const anyPresence = document.querySelector('input[name="filter-sub-presence"][value="-1"]');
-    if (anyPresence) anyPresence.checked = true;
-
-    advancedFilters = {
+// --- Empty filter set (single definition, used by clear and by URL restore) ---
+function emptyAdvancedFilters() {
+    return {
         yearFrom: '',
         yearTo: '',
         ratingFrom: '',
@@ -102,7 +85,51 @@ function clearAdvancedFilters() {
         subtitles: [],
         subPresence: ''
     };
-    
+}
+
+// --- Push the advancedFilters state into the panel controls ---
+// The controls are one of two places a filter can be set (the other is a chip
+// inside the movie details modal), so anything that changes the state has to
+// write it back here - otherwise "Apply Filters" re-reads stale checkboxes and
+// silently drops the filter.
+function syncAdvancedFilterControls() {
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value === null || value === undefined ? '' : value;
+    };
+    setValue('filter-year-from', advancedFilters.yearFrom);
+    setValue('filter-year-to', advancedFilters.yearTo);
+    setValue('filter-rating-from', advancedFilters.ratingFrom);
+    setValue('filter-rating-to', advancedFilters.ratingTo);
+    setValue('filter-country', advancedFilters.country);
+    setValue('filter-director', advancedFilters.director);
+    setValue('filter-actors', advancedFilters.actors);
+    setValue('filter-size-from', advancedFilters.sizeFrom);
+    setValue('filter-size-to', advancedFilters.sizeTo);
+
+    const setChecked = (selector, values) => {
+        const wanted = (values || []).map(String);
+        document.querySelectorAll(selector).forEach(cb => {
+            cb.checked = wanted.includes(String(cb.value));
+        });
+    };
+    setChecked('.filter-resolution', advancedFilters.resolutions);
+    setChecked('.filter-audio', advancedFilters.audioFormats);
+    setChecked('.filter-cert', advancedFilters.certifications);
+    setChecked('.filter-sub-lang', advancedFilters.subtitles);
+
+    // '' means "any" and is represented by the -1 radio
+    const presence = advancedFilters.subPresence === '' || advancedFilters.subPresence === undefined
+        ? '-1'
+        : String(advancedFilters.subPresence);
+    const radio = document.querySelector(`input[name="filter-sub-presence"][value="${presence}"]`);
+    if (radio) radio.checked = true;
+}
+
+// --- Clear All Filters ---
+function clearAdvancedFilters() {
+    advancedFilters = emptyAdvancedFilters();
+    syncAdvancedFilterControls();
     updateFilterCount();
     fetchMovies(searchInput.value, 0, false);
 }
@@ -110,7 +137,13 @@ function clearAdvancedFilters() {
 advFiltersClear.addEventListener('click', clearAdvancedFilters);
 
 // --- Update Filter Count Badge ---
+// Also the choke point for "the filter state changed": anything that calls this
+// (Apply, Clear, a subtitle chip, URL restore, or future code that sets
+// advancedFilters directly) gets the panel controls written back, so the state
+// and the checkboxes can no longer drift apart.
 function updateFilterCount() {
+    syncAdvancedFilterControls();
+
     let count = 0;
     
     if (advancedFilters.yearFrom) count++;
@@ -179,6 +212,38 @@ function buildAdvancedFilterParams() {
     }
 
     return params.toString();
+}
+
+// --- Restore advanced filters from URL params (shared/bookmarked links) ---
+// Mirror image of buildAdvancedFilterParams(): same keys, same meanings, so a
+// link can only reproduce a filter that the UI can also show (and the panel is
+// synced immediately, so the restored filters are visible and editable).
+function readAdvancedFiltersFromParams(params) {
+    const list = (key) => {
+        const raw = params.get(key);
+        return raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    };
+    const presence = params.get('sub_presence');
+
+    advancedFilters = {
+        yearFrom: params.get('year_from') || '',
+        yearTo: params.get('year_to') || '',
+        ratingFrom: params.get('rating_from') || '',
+        ratingTo: params.get('rating_to') || '',
+        resolutions: list('resolutions'),
+        audioFormats: list('audio'),
+        country: params.get('country') || '',
+        director: params.get('director') || '',
+        actors: params.get('actors') || '',
+        sizeFrom: params.get('size_from') || '',
+        sizeTo: params.get('size_to') || '',
+        certifications: list('certifications'),
+        subtitles: list('subtitles'),
+        subPresence: (presence === '1' || presence === '0') ? presence : ''
+    };
+
+    syncAdvancedFilterControls();
+    updateFilterCount();
 }
 
 // --- Check if any advanced filters are active ---

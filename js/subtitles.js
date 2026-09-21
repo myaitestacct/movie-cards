@@ -146,7 +146,13 @@ function renderModalSubtitles(subStr, container) {
         chip.addEventListener('click', (e) => {
             e.stopPropagation();
             smoothClose();
+            // Write the filter through the same path the panel uses, so the
+            // matching checkbox shows up as ticked instead of the state and the
+            // controls disagreeing (a later "Apply Filters" used to wipe it).
+            // "No subtitles" would contradict a language filter, so it is reset.
             advancedFilters.subtitles = [sub.language];
+            advancedFilters.subPresence = '';
+            syncAdvancedFilterControls();
             updateFilterCount();
             fetchMovies(searchInput.value, 0, false);
             showToast(`Filtering for ${sub.language} subtitles`, 'info');

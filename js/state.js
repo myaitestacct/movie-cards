@@ -19,7 +19,8 @@ var debounceTimer;
 var currentQuery = '';
 var currentOffset = 0;
 var hasMoreResults = true;
-var isLoading = false;
+var isLoading = false;          // a listing request is in flight
+var fetchRequestSeq = 0;        // sequence number of the newest listing request
 var currentLimit = 50;
 var showParipakva = false;       // archive/18+ content toggle (Ctrl+Shift+K)
 var currentSort = 'num_asc';     // current sort order

@@ -182,7 +182,7 @@ function renderGrid(movies, append = false) {
                 nowFav ? '♥ Added to favorites' : 'Removed from favorites',
                 nowFav ? 'success' : 'info'
             );
-            fetchStats();
+            updateStatsFavorites();
             updateFavoritesChipCount();
             if (currentCategory === '__favorites__') {
                 fetchMovies(searchInput.value, 0, false);
@@ -250,7 +250,7 @@ function renderTable(movies, append = false) {
                 nowFav ? '♥ Added to favorites' : 'Removed from favorites',
                 nowFav ? 'success' : 'info'
             );
-            fetchStats();
+            updateStatsFavorites();
             updateFavoritesChipCount();
             if (currentCategory === '__favorites__') {
                 fetchMovies(searchInput.value, 0, false);
