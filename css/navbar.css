@@ -14,9 +14,13 @@
 
 .controls {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     align-items: center;
-    flex-wrap: wrap;
+    /* Desktop: every control — search, sort, grid, slider, filters,
+       slideshow, jump, theme — stays on a single line. The search input
+       is the only flexible item and shrinks to make room. The tablet
+       breakpoint (≤1100px) re-enables wrapping below. */
+    flex-wrap: nowrap;
 }
 
 #search-input {
@@ -26,14 +30,27 @@
     border-radius: 50px;
     color: white;
     outline: none;
-    width: 350px;
+    /* Absorb leftover space, but never push the row onto a second line */
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 140px;
+    max-width: 350px;
     transition: 0.3s;
     font-family: inherit;
 }
 
 #search-input:focus {
     border-color: var(--accent);
-    width: 350px;
+}
+
+/* Icon/label controls keep their size; only the search input flexes */
+.sort-controls,
+.view-toggle,
+.poster-size-control,
+.adv-filters-toggle,
+.nav-action-btn,
+.theme-toggle {
+    flex-shrink: 0;
 }
 
 .view-toggle {

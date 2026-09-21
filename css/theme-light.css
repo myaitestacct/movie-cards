@@ -320,6 +320,11 @@ body.light-theme .stat-divider {
     background: rgba(0, 0, 0, 0.1);
 }
 
+body.light-theme .stat-growth:hover {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
 /* Breadcrumbs */
 body.light-theme .breadcrumb-root {
     color: var(--accent);

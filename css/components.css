@@ -113,7 +113,8 @@
 }
 
 .collapsible-bar.collapsed .genre-filters,
-.collapsible-bar.collapsed .stats-bar {
+.collapsible-bar.collapsed .stats-bar,
+.collapsible-bar.collapsed .decade-filters {
     max-height: 0;
     padding-top: 0;
     padding-bottom: 0;
@@ -175,6 +176,50 @@
     width: 1px;
     height: 30px;
     background: var(--glass-border);
+}
+
+/* Growth launcher — last item in the stats bar, opens the
+   Collection Growth & Timeline overlay (same as the Y shortcut) */
+.stat-growth {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.25s ease;
+}
+
+.stat-growth:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border);
+}
+
+.stat-growth:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.stat-growth .stat-growth-icon {
+    display: flex;
+    align-items: center;
+    color: var(--accent);
+}
+
+.stat-growth .stat-label {
+    color: var(--accent);
+}
+
+/* Highlighted while the analytics overlay is open */
+body.analytics-open .stat-growth {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
+}
+
+body.analytics-open .stat-growth .stat-growth-icon,
+body.analytics-open .stat-growth .stat-label {
+    color: #fff;
 }
 
 /* Breadcrumb Navigation */
