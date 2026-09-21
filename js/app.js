@@ -14,6 +14,18 @@ sortSelect.addEventListener('change', () => {
     fetchMovies(searchInput.value, 0, false);
 });
 
+// --- Page Size Select ---
+if (limitSelect) {
+    limitSelect.addEventListener('change', () => {
+        const newLimit = parseInt(limitSelect.value, 10);
+        if (!PAGE_SIZE_OPTIONS.includes(newLimit)) return;
+        currentLimit = newLimit;
+        try { localStorage.setItem(LIMIT_KEY, String(currentLimit)); } catch (e) { /* storage unavailable */ }
+        // New page size → restart the window at page 1
+        fetchMovies(searchInput.value, 0, false);
+    });
+}
+
 // --- Modal Close ---
 closeModal.addEventListener('click', smoothClose);
 modal.addEventListener('click', e => { if (e.target === modal) smoothClose(); });
@@ -84,6 +96,15 @@ document.addEventListener('keydown', e => {
 // INITIALIZATION
 // ============================================
 
+// Restore saved page size BEFORE loadFromURL(), which uses it for page math
+if (limitSelect) {
+    const savedLimit = parseInt(localStorage.getItem(LIMIT_KEY), 10);
+    if (PAGE_SIZE_OPTIONS.includes(savedLimit)) {
+        currentLimit = savedLimit;
+        limitSelect.value = String(savedLimit);
+    }
+}
+
 // Restore state from URL hash (bookmarkable/shareable links)
 loadFromURL();
 
@@ -92,10 +113,10 @@ fetchCategories();
 fetchDecades();
 loadSavedCompare();
 fetchStats();
-fetchMovies(searchInput.value, 0, false);
+fetchMovies(searchInput.value, pendingPageOffset, false);
 
 // Handle browser back/forward buttons
 window.addEventListener('hashchange', () => {
     loadFromURL();
-    fetchMovies(searchInput.value, 0, false);
+    fetchMovies(searchInput.value, pendingPageOffset, false);
 });

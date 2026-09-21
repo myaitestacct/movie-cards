@@ -22,6 +22,17 @@
     align-items: center;
     justify-content: center;
     transition: all 0.25s ease;
+    /* Reveal on card hover, exactly like the favourite heart */
+    opacity: 0;
+    transform: scale(0.8);
+    padding: 0;
+    line-height: 1;
+}
+
+.movie-card:hover .compare-card-btn,
+.compare-card-btn:focus-visible {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .compare-card-btn:hover {
@@ -31,9 +42,15 @@
 }
 
 .compare-card-btn.active {
+    opacity: 1;
+    transform: scale(1);
     color: #fff;
     background: var(--accent);
     border-color: var(--accent);
+}
+
+.compare-card-btn.active:hover {
+    transform: scale(1.08);
 }
 
 /* List view variant: inline next to the favourite button */
@@ -43,6 +60,9 @@
     height: 28px;
     margin: 2px auto 0;
     font-size: 0.8rem;
+    /* always visible inside the table — not hover-gated like grid cards */
+    opacity: 1;
+    transform: none;
 }
 
 /* Floating tray ----------------------------------------------------------- */

@@ -47,6 +47,14 @@
                     <option value="rating_asc">Rating (Lowest)</option>
                 </select>
             </div>
+            <div class="sort-controls limit-controls">
+                <label for="limit-select" class="sort-label">Per page:</label>
+                <select id="limit-select" title="Movies per page">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
             <button id="btn-view-toggle" class="view-toggle" title="Toggle Grid/List view (Grid default)">
                 <svg class="icon-grid" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"></rect>
@@ -85,7 +93,7 @@
                 </svg>
                 <span>Slideshow</span>
             </button>
-            <button id="btn-quick-jump" class="adv-filters-toggle" title="Quick jump: by number, letter or decade">
+            <button id="btn-quick-jump" class="adv-filters-toggle" title="Quick jump: by number, letter, decade or page">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="9"></circle>
                     <line x1="12" y1="2" x2="12" y2="6"></line>
@@ -243,6 +251,7 @@
                 <button class="seg-btn qj-tab-btn active" data-tab="number" type="button">Number</button>
                 <button class="seg-btn qj-tab-btn" data-tab="letter" type="button">Letter</button>
                 <button class="seg-btn qj-tab-btn" data-tab="decade" type="button">Decade</button>
+                <button class="seg-btn qj-tab-btn" data-tab="page" type="button">Page</button>
             </div>
 
             <!-- By number -->
@@ -288,6 +297,7 @@
                     <button class="jump-letter-btn" data-letter="#" type="button" title="Titles starting with a digit">#</button>
                 </div>
                 <p id="jump-letter-status" class="jump-status">Pick a letter to list its movies.</p>
+                <div id="jump-letter-results" class="qj-results-list"></div>
             </section>
 
             <!-- By decade -->
@@ -306,6 +316,19 @@
                     <button class="jump-decade-btn" data-decade="2020" type="button">2020s</button>
                 </div>
                 <p id="jump-decade-status" class="jump-status">Pick a decade to list its movies.</p>
+                <div id="jump-decade-results" class="qj-results-list"></div>
+            </section>
+
+            <!-- By page -->
+            <section class="qj-tab-panel" data-tab-panel="page">
+                <label class="filter-label" for="jump-to-page">Page of the list</label>
+                <div class="filter-row">
+                    <button id="jump-page-prev" class="qj-step-btn" type="button" title="Previous page">‹</button>
+                    <input type="number" id="jump-to-page" class="filter-input" placeholder="e.g. 39" min="1" step="1">
+                    <button id="jump-page-next" class="qj-step-btn" type="button" title="Next page">›</button>
+                    <button id="jump-page-btn" class="adv-filters-btn-primary qj-go-btn" type="button">Go</button>
+                </div>
+                <p id="jump-page-status" class="jump-status">Enter a page number and press Go.</p>
             </section>
         </div>
         <div class="adv-filters-footer qj-footer">
@@ -422,6 +445,7 @@
     <script src="js/modal.js"></script>
     <script src="js/analytics.js"></script>
     <script src="js/slideshow.js"></script>
+    <script src="js/index-cache.js"></script>
     <script src="js/quick-jump.js"></script>
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
