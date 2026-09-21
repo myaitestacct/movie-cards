@@ -46,6 +46,7 @@ var INDEX_CACHE_TTL_MS = 12 * 60 * 60 * 1000;  // background-refresh after 12h
 var lastTotalMatches = 0;        // size of the current result set (for page math)
 var lastFetchOffset = 0;         // offset of the last non-append fetch (top of the window)
 var pendingPageOffset = 0;       // offset restored from the URL hash on load
+var jumpIsolatedView = false;    // true when a jump replaced the listing (no pages)
 
 // --- Advanced Filters State ---
 var advancedFilters = {
