@@ -47,8 +47,10 @@ function writeIndexCache(source, movies) {
 }
 
 // --- Fetch the full index from the server ---
-async function fetchMovieIndexFromServer() {
-    const response = await fetch(`api.php?action=index&archive=${showParipakva ? 1 : 0}`);
+// The source is passed in (never read from the global flag) so a fetch that was
+// started for one table can never be answered with the other table's rows.
+async function fetchMovieIndexFromServer(source) {
+    const response = await fetch(`api.php?action=index&archive=${source === 'paripakva' ? 1 : 0}`);
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
     const data = await response.json();
     if (!data.success || !Array.isArray(data.movies)) {
@@ -57,8 +59,11 @@ async function fetchMovieIndexFromServer() {
     return data.movies;
 }
 
-// One in-flight fetch per source at a time (dedupes concurrent callers).
-var _indexFetchPromise = null;
+// One in-flight fetch PER SOURCE (dedupes concurrent callers of the same list).
+// A single shared promise used to hand the main library's rows to a call that
+// asked for the archive — switching source mid-fetch (Ctrl+Shift+K) then made
+// letter/decade/page jumps work off the wrong collection.
+var _indexFetchPromises = Object.create(null);
 
 /**
  * Resolve the movie index for the current source.
@@ -71,38 +76,67 @@ async function ensureMovieIndex(forceRefresh = false) {
         return movieIndex;
     }
 
-    if (_indexFetchPromise) return _indexFetchPromise;
+    const inFlight = _indexFetchPromises[source];
+    if (inFlight) return inFlight;
 
     const loadPromise = (async () => {
         if (!forceRefresh) {
             const cached = readIndexCache(source);
             if (cached) {
-                movieIndex = cached.movies;
-                movieIndexSource = source;
+                // Only adopt the cached rows if they are still what the UI wants
+                // (the source can change while this promise is being awaited).
+                if (indexSourceName() === source) {
+                    movieIndex = cached.movies;
+                    movieIndexSource = source;
+                }
                 // Stale by age → silent background refresh, but serve cached now.
                 if (Date.now() - (cached.savedAt || 0) > INDEX_CACHE_TTL_MS) {
                     refreshMovieIndexInBackground();
                 }
-                return movieIndex;
+                return cached.movies;
             }
         }
 
-        const fresh = await fetchMovieIndexFromServer();
-        movieIndex = fresh;
-        movieIndexSource = source;
+        const fresh = await fetchMovieIndexFromServer(source);
+        if (indexSourceName() === source) {
+            movieIndex = fresh;
+            movieIndexSource = source;
+        }
         writeIndexCache(source, fresh);
-        return movieIndex;
+        return fresh;
     })();
 
-    _indexFetchPromise = loadPromise;
+    _indexFetchPromises[source] = loadPromise;
     // Clear the slot only for THIS load. (The cache path can complete
     // synchronously, before the assignment above, so a finally inside the
     // async body would run too early and leave the promise pinned forever.)
     loadPromise.finally(() => {
-        if (_indexFetchPromise === loadPromise) _indexFetchPromise = null;
+        if (_indexFetchPromises[source] === loadPromise) delete _indexFetchPromises[source];
     });
 
     return loadPromise;
+}
+
+/** Is the in-memory index the one the current source (and therefore the UI) needs? */
+function movieIndexIsCurrent() {
+    return movieIndexSource === indexSourceName() && movieIndex.length > 0;
+}
+
+/**
+ * Await the index for the CURRENT source, retrying when the source switches
+ * while a fetch is in flight. Callers that filter the index must use this (or
+ * check movieIndexIsCurrent() afterwards) rather than ensureMovieIndex(), which
+ * may legitimately return the index of the source they asked about a moment ago.
+ */
+async function ensureCurrentMovieIndex() {
+    // Three attempts: one for the initial load, one for a source switch that
+    // landed mid-fetch, one spare. A user toggling faster than the network is
+    // better served by the caller's server fallback than by an endless retry.
+    for (let attempt = 0; attempt < 3; attempt++) {
+        await ensureMovieIndex();
+        if (movieIndexIsCurrent()) return movieIndex;
+    }
+    throw new Error('Movie index unavailable for the selected source');
 }
 
 function refreshMovieIndexInBackground() {
@@ -144,6 +178,9 @@ function validateMovieIndexCount(totalMovies) {
 
 /** Movies whose (formatted) title starts with a letter. '#'/'[0-9]' = any digit. */
 function indexMoviesStartingWith(letter) {
+    // Never answer from the other source's index (Ctrl+Shift+K mid-fetch).
+    if (!movieIndexIsCurrent()) return [];
+
     const digitsOnly = (letter === '#' || letter === '[0-9]');
     const wanted = letter.toUpperCase();
 
@@ -156,6 +193,8 @@ function indexMoviesStartingWith(letter) {
 
 /** Movies released within a decade (both ends inclusive). */
 function indexMoviesInDecade(decadeStart) {
+    if (!movieIndexIsCurrent()) return [];
+
     const from = parseInt(decadeStart, 10);
     if (isNaN(from)) return [];
     const to = from + 9;
@@ -167,6 +206,7 @@ function indexMoviesInDecade(decadeStart) {
 }
 
 function indexMovieByNum(num) {
+    if (!movieIndexIsCurrent()) return null;
     const wanted = Number(num);
     return movieIndex.find(m => m.num === wanted) || null;
 }

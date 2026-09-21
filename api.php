@@ -106,8 +106,8 @@ if ($action === 'stats') {
         $topGenre = $topGenreRow ? $topGenreRow['CATEGORY'] : 'N/A';
         $topGenreCount = $topGenreRow ? $topGenreRow['cnt'] : 0;
 
-        // Total runtime (calculate from LENGTH field)
-        $totalMinutes = sumRuntimeMinutes($pdo, $tableToQuery);
+        // Total runtime (from the LENGTH field, cached - see the helper)
+        $totalMinutes = sumRuntimeMinutesCached($pdo, $tableToQuery);
 
         echo json_encode([
             'totalMovies' => (int)$totalMovies,
@@ -160,7 +160,7 @@ if ($action === 'analytics') {
         $totalsStmt->execute();
         $totals = $totalsStmt->fetch() ?: [];
 
-        $minutes = sumRuntimeMinutes($pdo, $tableToQuery);
+        $minutes = sumRuntimeMinutesCached($pdo, $tableToQuery);
         $totalMovies = (int)($totals['total'] ?? 0);
         $sizeMb = (float)($totals['size_mb'] ?? 0);
         $firstYear = !empty($totals['first_year']) ? (int)$totals['first_year'] : null;
@@ -450,6 +450,10 @@ if ($offset < 0) $offset = 0;
 $query = str_replace("\0", '', $query);
 $query = mb_substr($query, 0, 200);
 
+// Wildcards the user typed must match literally ("50%" searches for the text,
+// not for everything), exactly like the letter and subtitle filters below.
+$searchTerm = '%' . escapeLike($query) . '%';
+
 // ===== SORT PARAMETER =====
 $sort = isset($_GET['sort']) ? trim($_GET['sort']) : 'num_asc';
 
@@ -574,15 +578,15 @@ if (!empty($audioFormats)) {
 }
 if ($countryParam !== '') {
     $conditions[] = "COUNTRY LIKE :country";
-    $advancedBindings[':country'] = "%{$countryParam}%";
+    $advancedBindings[':country'] = '%' . escapeLike($countryParam) . '%';
 }
 if ($directorParam !== '') {
     $conditions[] = "DIRECTOR LIKE :director";
-    $advancedBindings[':director'] = "%{$directorParam}%";
+    $advancedBindings[':director'] = '%' . escapeLike($directorParam) . '%';
 }
 if ($actorsParam !== '') {
     $conditions[] = "ACTORS LIKE :actors";
-    $advancedBindings[':actors'] = "%{$actorsParam}%";
+    $advancedBindings[':actors'] = '%' . escapeLike($actorsParam) . '%';
 }
 if ($sizeFrom > 0) {
     $conditions[] = "CAST(FILESIZE AS DECIMAL(10,2)) >= :size_from";
@@ -616,22 +620,7 @@ $sql = "SELECT $movieColumns
 
 try {
     $stmt = $pdo->prepare($sql);
-    $searchTerm = "%$query%";
-    
-    $stmt->bindValue(':search1', $searchTerm, PDO::PARAM_STR);
-    $stmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
-    $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
-    $stmt->bindValue(':search4', $searchTerm, PDO::PARAM_STR);
-    $stmt->bindValue(':search5', $searchTerm, PDO::PARAM_STR);
-    if ($category !== '') {
-        $stmt->bindValue(':category', $category, PDO::PARAM_STR);
-    }
-    foreach ($favBindings as $key => $val) {
-        $stmt->bindValue($key, $val, PDO::PARAM_INT);
-    }
-    foreach ($advancedBindings as $key => $val) {
-        $stmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
-    }
+    bindListQueryParams($stmt, $searchTerm, $category, $favBindings, $advancedBindings);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     
@@ -652,20 +641,7 @@ try {
 // ===== GET TOTAL MATCHING RESULTS =====
 try {
     $countStmt = $pdo->prepare("SELECT COUNT(*) as total FROM $tableToQuery WHERE $whereClause");
-    $countStmt->bindValue(':search1', $searchTerm, PDO::PARAM_STR);
-    $countStmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
-    $countStmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
-    $countStmt->bindValue(':search4', $searchTerm, PDO::PARAM_STR);
-    $countStmt->bindValue(':search5', $searchTerm, PDO::PARAM_STR);
-    if ($category !== '') {
-        $countStmt->bindValue(':category', $category, PDO::PARAM_STR);
-    }
-    foreach ($favBindings as $key => $val) {
-        $countStmt->bindValue($key, $val, PDO::PARAM_INT);
-    }
-    foreach ($advancedBindings as $key => $val) {
-        $countStmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
-    }
+    bindListQueryParams($countStmt, $searchTerm, $category, $favBindings, $advancedBindings);
     $countStmt->execute();
     $totalResult = $countStmt->fetch();
     $totalMatches = (int)($totalResult['total'] ?? 0);
@@ -694,6 +670,29 @@ echo json_encode([
     'sort' => $sort
 ]);
 // ===== HELPER FUNCTIONS =====
+
+/**
+ * Bind the parameters shared by the page query and the COUNT(*) that follows
+ * it, so the row window and the total can never disagree about what was asked
+ * (a parameter added to one but not the other used to make hasMore lie).
+ */
+function bindListQueryParams(PDOStatement $stmt, string $searchTerm, string $category, array $favBindings, array $advancedBindings): void
+{
+    $stmt->bindValue(':search1', $searchTerm, PDO::PARAM_STR);
+    $stmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
+    $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
+    $stmt->bindValue(':search4', $searchTerm, PDO::PARAM_STR);
+    $stmt->bindValue(':search5', $searchTerm, PDO::PARAM_STR);
+    if ($category !== '') {
+        $stmt->bindValue(':category', $category, PDO::PARAM_STR);
+    }
+    foreach ($favBindings as $key => $val) {
+        $stmt->bindValue($key, $val, PDO::PARAM_INT);
+    }
+    foreach ($advancedBindings as $key => $val) {
+        $stmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+}
 
 /**
  * Parse a free-text runtime ("2h 30m", "2h30m", "120 min", "2:30") into minutes.
@@ -735,6 +734,78 @@ function sumRuntimeMinutes(PDO $pdo, string $table): int
         $total += parseRuntimeMinutes((string)$row['LENGTH']);
     }
     return $total;
+}
+
+/**
+ * Cheap change-detector for the runtime total: one pass over two columns with
+ * no row transfer and no PHP parsing. Returns null when the database cannot
+ * answer at all (no CRC32, restricted access), which disables caching rather
+ * than guessing.
+ */
+function runtimeFingerprint(PDO $pdo, string $table): ?array
+{
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS rows_total,
+                                      COALESCE(SUM(CRC32(CONCAT_WS('|', NUM, `LENGTH`))), 0) AS fingerprint
+                               FROM $table
+                               WHERE `LENGTH` IS NOT NULL AND `LENGTH` != ''");
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if (!$row) {
+            return null;
+        }
+        return ['rows' => (int)$row['rows_total'], 'fingerprint' => (string)$row['fingerprint']];
+    } catch (\PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * Total runtime in minutes, cached in the temp directory and revalidated with
+ * runtimeFingerprint().
+ *
+ * parseRuntimeMinutes() stays the source of truth, so the number never changes
+ * - only the work does: the full scan plus a PHP parse per row is paid when the
+ * collection actually changed, not on every stats/analytics request. A temp
+ * directory that cannot be written simply falls back to computing the total.
+ */
+function sumRuntimeMinutesCached(PDO $pdo, string $table): int
+{
+    static $memo = [];
+    if (isset($memo[$table])) {
+        return $memo[$table];
+    }
+
+    $cacheFile = sys_get_temp_dir() . '/movielib_runtime_' . md5($table) . '.json';
+    $fingerprint = runtimeFingerprint($pdo, $table);
+
+    if ($fingerprint !== null) {
+        $raw = @file_get_contents($cacheFile);
+        if ($raw !== false) {
+            $cached = json_decode($raw, true);
+            if (is_array($cached)
+                && isset($cached['minutes'])
+                && (int)($cached['rows'] ?? -1) === $fingerprint['rows']
+                && (string)($cached['fingerprint'] ?? '') === $fingerprint['fingerprint']) {
+                return $memo[$table] = (int)$cached['minutes'];
+            }
+        }
+    }
+
+    $minutes = sumRuntimeMinutes($pdo, $table);
+    $memo[$table] = $minutes;
+
+    // Best effort: caching must never be able to break the endpoint.
+    if ($fingerprint !== null) {
+        @file_put_contents($cacheFile, json_encode([
+            'rows' => $fingerprint['rows'],
+            'fingerprint' => $fingerprint['fingerprint'],
+            'minutes' => $minutes,
+            'computedAt' => date('c'),
+        ]), LOCK_EX);
+    }
+
+    return $minutes;
 }
 
 /**
@@ -899,8 +970,12 @@ function mapMovieRow(array $row, bool $useParipakva, array $posterConfig, string
     // ==============================
 
     return [
-        'id' => $row['NUM'],
-        'num' => $row['NUM'],  // ← Explicit NUM field for frontend
+        // NUM is the app-wide key (favorites, compare list, quick jump).
+        // MySQL returns it as a string under native prepares, so cast it here
+        // once - every endpoint then hands the frontend the same type, and a
+        // PDO/extension change can no longer silently flip it to a string.
+        'id' => (int)$row['NUM'],
+        'num' => (int)$row['NUM'],  // ← Explicit NUM field for frontend
         'title' => $row['FORMATTEDTITLE'] ?? '',
         'year' => $row['YEAR'] ?? 'N/A',
         'genre' => $row['CATEGORY'] ?? 'Unknown',

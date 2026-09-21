@@ -53,6 +53,9 @@ document.addEventListener('keydown', e => {
         currentDecade = '';
         fetchCategories();
         fetchDecades();
+        // The whole collection changed, so the stats bar (and the index-size
+        // check inside fetchStats) has to follow the new source.
+        fetchStats();
         fetchMovies(searchInput.value, 0, false);
         console.log(`Paripakva ${showParipakva ? 'enabled' : 'disabled'}`);
         return;

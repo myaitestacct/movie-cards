@@ -12,6 +12,13 @@ function updateURL() {
     if (currentDecade) params.set('decade', currentDecade);
     if (showParipakva) params.set('archive', '1');
 
+    // Advanced filters belong to the state too: a link copied from a filtered
+    // view used to reopen unfiltered. The key names come from the panel's own
+    // builder so the two can never drift apart.
+    if (typeof buildAdvancedFilterParams === 'function') {
+        new URLSearchParams(buildAdvancedFilterParams()).forEach((value, key) => params.set(key, value));
+    }
+
     // Persist the top of the visible window so page jumps are shareable
     const page = Math.floor(lastFetchOffset / currentLimit) + 1;
     if (page > 1) params.set('page', String(page));
@@ -43,6 +50,12 @@ function loadFromURL() {
     currentDecade = decade;
     showParipakva = archive === '1';
     pendingPageOffset = (page - 1) * currentLimit;
+
+    // Advanced filters are restored from the same hash (and the panel controls
+    // are synced, so the restored state is visible rather than hidden).
+    if (typeof readAdvancedFiltersFromParams === 'function') {
+        readAdvancedFiltersFromParams(params);
+    }
 
     sortSelect.value = currentSort;
     return true;
