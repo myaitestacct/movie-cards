@@ -51,6 +51,7 @@ async function fetchMovies(query = '', offset = 0, append = false) {
             clearContainer(contentArea);
             currentOffset = 0;
             hasMoreResults = true;
+            jumpIsolatedView = false;   // a normal listing replaces any jump-only view
             showLoadingSpinner();
         }
         isLoading = true;

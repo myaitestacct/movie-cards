@@ -8,6 +8,8 @@
 // 50-row server page. Results appear as clickable rows; clicking one jumps
 // the grid to that movie's page (or opens its details when filters prevent
 // page math). The Page tab jumps directly to page N of the sequential list.
+// Reset (footer button, « first-page stepper, or the listing banner) returns
+// to page 1 of the current search/filter listing and clears jump UI.
 
 const btnQuickJump = document.getElementById('btn-quick-jump');
 const quickJumpPanel = document.getElementById('quick-jump-panel');
@@ -21,9 +23,12 @@ const jumpLetterResults = document.getElementById('jump-letter-results');
 const jumpDecadeResults = document.getElementById('jump-decade-results');
 const jumpToPageInput = document.getElementById('jump-to-page');
 const jumpPageBtn = document.getElementById('jump-page-btn');
+const jumpPageFirst = document.getElementById('jump-page-first');
 const jumpPagePrev = document.getElementById('jump-page-prev');
 const jumpPageNext = document.getElementById('jump-page-next');
+const jumpPageLast = document.getElementById('jump-page-last');
 const jumpPageStatus = document.getElementById('jump-page-status');
+const jumpResetBtn = document.getElementById('jump-reset-btn');
 const totalMoviesCount = document.getElementById('total-movies-count');
 const currentPosition = document.getElementById('current-position');
 
@@ -105,14 +110,76 @@ function setJumpButtonsDisabled(selector, disabled) {
 // Quick jump replaces the normal paged listing with a fixed result set, so
 // infinite scroll / Load More must not append unrelated pages to it.
 function renderJumpResults(movies, positionLabel) {
+    jumpIsolatedView = true;
     hasMoreResults = false;
     currentOffset = 0;
     lastFetchOffset = 0;
     currentMovies = movies;   // slideshow/analytics follow the jump result set
     renderGrid(movies);
+    addJumpResetBanner(positionLabel);
     currentPosition.textContent = positionLabel;
     contentArea.scrollTop = 0;
+    updatePageStepperState();
 }
+
+/** Banner above an isolated jump listing so the user can get back without reopening the panel. */
+function addJumpResetBanner(positionLabel) {
+    const existing = contentArea.querySelector('.jump-reset-banner');
+    if (existing) existing.remove();
+
+    const banner = createElement('div', 'jump-reset-banner');
+
+    const text = createElement('span', 'jump-reset-banner-text');
+    text.textContent = positionLabel
+        ? `Showing jump results: ${positionLabel}`
+        : 'Showing jump results';
+
+    const btn = createElement('button', 'jump-reset-banner-btn', 'Back to first page');
+    btn.type = 'button';
+    btn.title = 'Clear this jump and return to the first page of the list';
+    btn.addEventListener('click', () => resetQuickJump());
+
+    banner.append(text, btn);
+    contentArea.insertBefore(banner, contentArea.firstChild);
+}
+
+// --- Reset: clear jump UI and restore page 1 of the current listing ---
+function clearQuickJumpPanelState() {
+    if (jumpToNumberInput) jumpToNumberInput.value = '';
+    if (jumpToPageInput) jumpToPageInput.value = '';
+    if (jumpLetterResults) jumpLetterResults.innerHTML = '';
+    if (jumpDecadeResults) jumpDecadeResults.innerHTML = '';
+    document.querySelectorAll('.jump-letter-btn.active, .jump-decade-btn.active')
+        .forEach(btn => btn.classList.remove('active'));
+    setJumpStatus(jumpNumberStatus, 'Enter a movie # and press Go.');
+    setJumpStatus(jumpLetterStatus, 'Pick a letter to list its movies.');
+    setJumpStatus(jumpDecadeStatus, 'Pick a decade to list its movies.');
+    refreshPageTabStatus();
+}
+
+function setJumpSelection(kind, value) {
+    document.querySelectorAll('.jump-letter-btn').forEach(btn => {
+        btn.classList.toggle('active', kind === 'letter' && btn.dataset.letter === value);
+    });
+    document.querySelectorAll('.jump-decade-btn').forEach(btn => {
+        btn.classList.toggle('active', kind === 'decade' && btn.dataset.decade === value);
+    });
+}
+
+async function resetQuickJump() {
+    const needsReload = jumpIsolatedView || lastFetchOffset > 0;
+
+    clearQuickJumpPanelState();
+
+    if (needsReload) {
+        await fetchMovies(searchInput.value, 0, false);
+        if (typeof showToast === 'function') showToast('Returned to the first page', 'info');
+    } else if (typeof showToast === 'function') {
+        showToast('Jump selection cleared', 'info');
+    }
+}
+
+if (jumpResetBtn) jumpResetBtn.addEventListener('click', resetQuickJump);
 
 // --- Collection info ---
 async function updateCollectionInfo() {
@@ -299,6 +366,7 @@ document.querySelectorAll('.jump-letter-btn').forEach(btn => {
 });
 
 async function jumpToLetter(letter) {
+    setJumpSelection('letter', letter);
     setJumpStatus(jumpLetterStatus, 'Searching...');
     setJumpButtonsDisabled('.jump-letter-btn', true);
 
@@ -356,6 +424,7 @@ document.querySelectorAll('.jump-decade-btn').forEach(btn => {
 });
 
 async function jumpToDecade(decade) {
+    setJumpSelection('decade', decade);
     setJumpStatus(jumpDecadeStatus, 'Searching...');
     setJumpButtonsDisabled('.jump-decade-btn', true);
 
@@ -413,6 +482,20 @@ function currentPageNumber() {
     return Math.floor(lastFetchOffset / currentLimit) + 1;
 }
 
+/** Enable/disable « ‹ › » so page 1 is always one click away. */
+function updatePageStepperState() {
+    const page = currentPageNumber();
+    const totalPages = sequentialTotalPages(currentLimit);
+    // An isolated jump listing reports offset 0, but it is NOT page 1 of the list.
+    const atStart = !jumpIsolatedView && page <= 1;
+    const atEnd = !jumpIsolatedView && totalPages > 0 && page >= totalPages;
+
+    if (jumpPageFirst) jumpPageFirst.disabled = atStart;
+    if (jumpPagePrev) jumpPagePrev.disabled = atStart;
+    if (jumpPageNext) jumpPageNext.disabled = atEnd || totalPages < 1;
+    if (jumpPageLast) jumpPageLast.disabled = atEnd || totalPages < 1;
+}
+
 /** Status line for the Page tab: current window + total pages. */
 function refreshPageTabStatus() {
     if (!jumpPageStatus) return;
@@ -420,13 +503,17 @@ function refreshPageTabStatus() {
     const totalPages = sequentialTotalPages(currentLimit);
     const total = isSequentialIndexState() ? movieIndex.length : lastTotalMatches;
 
-    if (totalPages > 0) {
+    if (jumpIsolatedView) {
+        setJumpStatus(jumpPageStatus, 'Jump results are showing — Reset or « returns to page 1 of the list.');
+    } else if (totalPages > 0) {
         setJumpStatus(jumpPageStatus,
             `${currentLimit} movies per page · currently page ${currentPageNumber().toLocaleString()} of ${totalPages.toLocaleString()}` +
             (total ? ` (${total.toLocaleString()} movies)` : ''));
     } else {
         setJumpStatus(jumpPageStatus, `${currentLimit} movies per page · enter a page number and press Go.`);
     }
+
+    updatePageStepperState();
 }
 
 /** Live preview: which movie starts the typed page number? */
@@ -500,6 +587,10 @@ jumpToPageInput.addEventListener('keydown', (e) => {
 
 jumpToPageInput.addEventListener('input', updatePagePreview);
 
+if (jumpPageFirst) {
+    jumpPageFirst.addEventListener('click', () => jumpToPage(1));
+}
+
 jumpPagePrev.addEventListener('click', () => {
     jumpToPage(Math.max(1, currentPageNumber() - 1));
 });
@@ -507,3 +598,10 @@ jumpPagePrev.addEventListener('click', () => {
 jumpPageNext.addEventListener('click', () => {
     jumpToPage(currentPageNumber() + 1);
 });
+
+if (jumpPageLast) {
+    jumpPageLast.addEventListener('click', () => {
+        const totalPages = sequentialTotalPages(currentLimit);
+        jumpToPage(totalPages > 0 ? totalPages : 1);
+    });
+}

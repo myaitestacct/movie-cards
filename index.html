@@ -323,17 +323,22 @@
             <section class="qj-tab-panel" data-tab-panel="page">
                 <label class="filter-label" for="jump-to-page">Page of the list</label>
                 <div class="filter-row">
+                    <button id="jump-page-first" class="qj-step-btn" type="button" title="First page">«</button>
                     <button id="jump-page-prev" class="qj-step-btn" type="button" title="Previous page">‹</button>
                     <input type="number" id="jump-to-page" class="filter-input" placeholder="e.g. 39" min="1" step="1">
                     <button id="jump-page-next" class="qj-step-btn" type="button" title="Next page">›</button>
+                    <button id="jump-page-last" class="qj-step-btn" type="button" title="Last page">»</button>
                     <button id="jump-page-btn" class="adv-filters-btn-primary qj-go-btn" type="button">Go</button>
                 </div>
                 <p id="jump-page-status" class="jump-status">Enter a page number and press Go.</p>
             </section>
         </div>
         <div class="adv-filters-footer qj-footer">
-            <span class="qj-info">In collection: <strong id="total-movies-count">—</strong></span>
-            <span id="current-position" class="jump-status"></span>
+            <div class="qj-footer-meta">
+                <span class="qj-info">In collection: <strong id="total-movies-count">—</strong></span>
+                <span id="current-position" class="jump-status"></span>
+            </div>
+            <button id="jump-reset-btn" class="qj-reset-btn" type="button" title="Clear this jump and return to the first page">Reset</button>
         </div>
     </div>
 
