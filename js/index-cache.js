@@ -49,7 +49,13 @@ function writeIndexCache(source, movies) {
 // --- Fetch the full index from the server ---
 // The source is passed in (never read from the global flag) so a fetch that was
 // started for one table can never be answered with the other table's rows.
+// An omitted source used to fall through to `archive=0` — i.e. silently answer
+// with the main library — so the parameter is validated instead of trusted.
 async function fetchMovieIndexFromServer(source) {
+    if (source !== 'movies' && source !== 'paripakva') {
+        throw new Error(`Movie index fetch needs a source ('movies' | 'paripakva'), got: ${source}`);
+    }
+
     const response = await fetch(`api.php?action=index&archive=${source === 'paripakva' ? 1 : 0}`);
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
     const data = await response.json();
@@ -140,25 +146,36 @@ async function ensureCurrentMovieIndex() {
 }
 
 function refreshMovieIndexInBackground() {
-    if (_indexRefreshInFlight) return;
-    _indexRefreshInFlight = true;
-
     // Fetch directly (not via ensureMovieIndex) so an in-flight cache read
     // can never swallow the refresh.
+    //
+    // The source has to travel with the request (see fetchMovieIndexFromServer)
+    // AND identify the in-flight flag: a single shared "a refresh is running"
+    // flag let a refresh of the main library skip the archive's refresh, and a
+    // source-less call then wrote the main library's rows into the paripakva
+    // index and cache — letter/decade/quick-jump results were silently served
+    // from the wrong collection until the next full reload.
     const source = indexSourceName();
-    fetchMovieIndexFromServer()
+    if (_indexRefreshInFlight[source]) return;
+    _indexRefreshInFlight[source] = true;
+
+    fetchMovieIndexFromServer(source)
         .then(fresh => {
-            // Ignore the result if the user switched archive meanwhile.
+            // Fresh rows are valid for their own cache key regardless of which
+            // collection is on screen now (same as the ensureMovieIndex path).
+            writeIndexCache(source, fresh);
+            // The in-memory copy may only be replaced while the UI still shows
+            // this source, or it would hand the other collection its rows.
             if (indexSourceName() !== source) return;
             movieIndex = fresh;
             movieIndexSource = source;
-            writeIndexCache(source, fresh);
         })
         .catch(err => console.warn('Index refresh failed:', err))
-        .finally(() => { _indexRefreshInFlight = false; });
+        .finally(() => { delete _indexRefreshInFlight[source]; });
 }
 
-var _indexRefreshInFlight = false;
+// One entry per source ('movies' | 'paripakva') currently being refreshed.
+var _indexRefreshInFlight = Object.create(null);
 
 /**
  * Called whenever a stats response arrives: if the collection size no longer
