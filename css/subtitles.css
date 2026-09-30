@@ -81,6 +81,7 @@
     font-size: 0.78rem;
     color: var(--text-main);
     transition: all 0.2s ease;
+    cursor: pointer; /* chips jump to the subtitle filter */
 }
 
 .subtitle-chip:hover {

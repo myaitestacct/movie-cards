@@ -7,6 +7,7 @@ function updateURL() {
     const params = new URLSearchParams();
     if (searchInput.value) params.set('q', searchInput.value);
     if (currentSort !== 'num_asc') params.set('sort', currentSort);
+    if (currentView && currentView !== 'grid') params.set('view', currentView);
     if (currentCategory === '__favorites__') params.set('favs', '1');
     else if (currentCategory) params.set('genre', currentCategory);
     if (currentDecade) params.set('decade', currentDecade);
@@ -42,6 +43,7 @@ function loadFromURL() {
     const archive = params.get('archive') || '0';
     const favs = params.get('favs') || '0';
     const decade = params.get('decade') || '';
+    const view = params.get('view') || '';
     const page = Math.max(1, parseInt(params.get('page'), 10) || 1);
 
     searchInput.value = q;
@@ -50,6 +52,14 @@ function loadFromURL() {
     currentDecade = decade;
     showParipakva = archive === '1';
     pendingPageOffset = (page - 1) * currentLimit;
+
+    // Restore the view mode as well; the toggle button/label and the disabled
+    // poster-size slider have to follow.
+    if (view === 'grid' || view === 'list') {
+        currentView = view;
+        if (typeof updateViewToggleButton === 'function') updateViewToggleButton();
+        if (typeof updatePosterSizeControlState === 'function') updatePosterSizeControlState();
+    }
 
     // Advanced filters are restored from the same hash (and the panel controls
     // are synced, so the restored state is visible rather than hidden).

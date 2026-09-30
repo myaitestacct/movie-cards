@@ -141,7 +141,6 @@ function renderModalSubtitles(subStr, container) {
 
         chip.innerHTML = chipHtml;
         chip.title = `Filter library for ${sub.language} subtitles`;
-        chip.style.cursor = 'pointer';
 
         chip.addEventListener('click', (e) => {
             e.stopPropagation();

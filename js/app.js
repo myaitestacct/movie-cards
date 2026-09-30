@@ -79,6 +79,8 @@ document.addEventListener('keydown', e => {
         if (currentView !== 'grid') {
             currentView = 'grid';
             updateViewToggleButton();
+            updatePosterSizeControlState();
+            playViewTransition();
             fetchMovies(searchInput.value, 0, false);
         }
         return;
@@ -89,6 +91,8 @@ document.addEventListener('keydown', e => {
         if (currentView !== 'list') {
             currentView = 'list';
             updateViewToggleButton();
+            updatePosterSizeControlState();
+            playViewTransition();
             fetchMovies(searchInput.value, 0, false);
         }
         return;

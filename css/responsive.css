@@ -196,6 +196,16 @@
 
 /* Small Mobile */
 @media (max-width: 400px) {
+    /* Very narrow phones: drop the file-metric columns instead of forcing a
+       long horizontal scroll. Both values stay available in the details modal
+       (runtime badge and tech details) and in grid view. */
+    .movie-table th.cell-length,
+    .movie-table td.cell-length,
+    .movie-table th.cell-size,
+    .movie-table td.cell-size {
+        display: none;
+    }
+
     .movie-grid {
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 0.5rem;

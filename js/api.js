@@ -258,6 +258,9 @@ async function fetchStats() {
                 <span class="stat-label">Growth</span>
             </button>
         `;
+        // Polish: count the numeric stats up from zero (utils.js leaves the
+        // non-numeric ones and reduced-motion users untouched).
+        animateStatNumbers(statsBar);
     } catch (err) {
         console.warn('Failed to load stats:', err);
     }
