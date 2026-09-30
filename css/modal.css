@@ -107,6 +107,7 @@ dialog[open] { animation: modalZoom 0.35s ease forwards; }
     box-shadow: 0 25px 60px rgba(0,0,0,0.9);
     flex-shrink: 0;
     transition: transform 0.15s ease-out;
+    cursor: pointer; /* opens the poster lightbox */
 }
 
 .modal-poster-wrapper img.modal-img { transition: transform 0.25s ease; }
@@ -158,6 +159,9 @@ dialog[open] .tech-icon { animation: iconPulse 2.8s ease-in-out infinite; }
 .tech-item:hover .tech-icon { animation: none; transform: scale(1.15); opacity: 1; }
 
 .tech-file-wrapper { margin-top: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* Modal rating badge acts as a link when it carries an external URL */
+.rating-badge[href] { cursor: pointer; }
 .tech-file-row { align-items: center; }
 
 .tech-file-name { font-size: 0.9rem; color: #fff; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

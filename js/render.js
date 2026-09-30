@@ -46,6 +46,10 @@ function renderGrid(movies, append = false) {
         contentArea.appendChild(grid);
     }
 
+    // Batch all cards into a fragment so one DOM insertion replaces one per
+    // movie (layout/style recalculation runs once instead of N times).
+    const frag = document.createDocumentFragment();
+
     movies.forEach(movie => {
         const card = createElement('div', 'movie-card');
         card.dataset.num = movie.num;
@@ -92,11 +96,9 @@ function renderGrid(movies, append = false) {
             }
         };
 
-        // Source badge
+        // Source badge (colors live in .movie-badge.badge-source)
         if (movie.source === 'paripakva') {
             const sourceBadge = createElement('div', 'movie-badge badge-source', '18+');
-            sourceBadge.style.backgroundColor = 'purple';
-            sourceBadge.style.color = '#fff';
             posterWrapper.appendChild(sourceBadge);
         }
 
@@ -122,7 +124,7 @@ function renderGrid(movies, append = false) {
         if (ratingVal > 0) {
             const ratingBadge = createBadge(`⭐ ${ratingVal.toFixed(1)}`, 'badge-rating');
             if (movie.external_url) {
-                ratingBadge.style.cursor = 'pointer';
+                ratingBadge.classList.add('badge-link');
                 ratingBadge.title = 'Open external rating';
                 ratingBadge.addEventListener('click', e => {
                     e.stopPropagation();
@@ -157,8 +159,6 @@ function renderGrid(movies, append = false) {
         const title = createElement('div', 'card-title');
         title.innerHTML = highlightSearchTerm(titleText, searchInput.value);
         title.setAttribute('title', titleText);
-        title.style.whiteSpace = 'normal';
-        title.style.wordBreak = 'break-word';
 
         const meta = createElement('div', 'card-meta');
         if (movie.genre) {
@@ -203,8 +203,10 @@ function renderGrid(movies, append = false) {
         }
 
         card.addEventListener('click', () => openModal(movie));
-        grid.appendChild(card);
+        frag.appendChild(card);
     });
+
+    grid.appendChild(frag);
 }
 
 // --- Render Table ---
@@ -221,14 +223,74 @@ function renderTable(movies, append = false) {
         tbody = createElement('tbody');
 
         const headerRow = createElement('tr');
-        ['', '#', 'Cover', 'Title', 'Certification', 'Year', 'Category', 'Rating'].forEach(h => {
-            headerRow.appendChild(createElement('th', '', h));
+        // className doubles as the CSS hook (responsive.css hides the Length
+        // and Size columns on very narrow screens) and must match the td
+        // classes assigned further below. `sort` is the API sort family; it is
+        // omitted for columns the backend cannot sort by. Columns that read
+        // better "largest first" open in desc (defaultDir).
+        const tableColumns = [
+            { label: '' },
+            { label: '#', sort: 'num', defaultDir: 'asc' },
+            { label: 'Cover' },
+            { label: 'Title', sort: 'title', defaultDir: 'asc' },
+            { label: 'Certification', className: 'cell-cert' },
+            { label: 'Year', sort: 'year', defaultDir: 'desc', className: 'cell-year' },
+            { label: 'Length', sort: 'length', defaultDir: 'desc', className: 'cell-length' },
+            { label: 'Category', className: 'cell-category' },
+            { label: 'Size', sort: 'size', defaultDir: 'desc', className: 'cell-size' },
+            { label: 'Rating', sort: 'rating', defaultDir: 'desc', className: 'cell-rating' },
+        ];
+        tableColumns.forEach(col => {
+            const th = createElement('th', col.className || '', col.label);
+
+            if (col.sort) {
+                const ascSort = col.sort + '_asc';
+                const descSort = col.sort + '_desc';
+                const isAsc = currentSort === ascSort;
+                const isDesc = currentSort === descSort;
+
+                th.setAttribute('data-sort', col.sort);
+                th.setAttribute('tabindex', '0');
+                th.setAttribute('title', 'Click to sort by ' + col.label.toLowerCase());
+
+                if (isAsc || isDesc) {
+                    th.classList.add('sorted');
+                    th.setAttribute('aria-sort', isAsc ? 'ascending' : 'descending');
+                    th.appendChild(createElement('span', 'sort-arrow', isAsc ? '▲' : '▼'));
+                }
+
+                // asc -> desc, desc -> asc, otherwise start on the column's
+                // default direction.
+                const nextSort = isAsc ? descSort : (isDesc ? ascSort : col.sort + '_' + (col.defaultDir || 'asc'));
+
+                const applySort = () => {
+                    currentSort = nextSort;
+                    sortSelect.value = nextSort;
+                    fetchMovies(searchInput.value, 0, false);
+                };
+
+                th.addEventListener('click', e => {
+                    e.stopPropagation();
+                    applySort();
+                });
+                th.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        applySort();
+                    }
+                });
+            }
+
+            headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
         table.append(thead, tbody);
         if (!append) clearContainer(contentArea);
         contentArea.appendChild(table);
     }
+
+    // One DOM insertion for the whole page batch (see renderGrid).
+    const frag = document.createDocumentFragment();
 
     movies.forEach(movie => {
         const row = createElement('tr');
@@ -271,7 +333,6 @@ function renderTable(movies, append = false) {
         }
 
         const tdNum = createElement('td', 'num-cell', `#${movie.num}`);
-        Object.assign(tdNum.style, { fontWeight: '600', color: 'var(--accent)', minWidth: '50px' });
 
         const tdImg = createElement('td');
         const img = createElement('img', 'table-poster', '', { src: movie.poster, loading: 'lazy' });
@@ -292,44 +353,60 @@ function renderTable(movies, append = false) {
         tdCert.innerHTML = highlightSearchTerm(movie.certification, searchInput.value);
         const tdYear = createElement('td');
         tdYear.innerHTML = highlightSearchTerm(movie.year, searchInput.value);
+
+        // Runtime (e.g. "2h 30m"). Not part of the server-side search columns,
+        // so no highlight is needed here - plain text keeps it injection-safe.
+        const tdLength = createElement('td', 'cell-length');
+        const lengthText = (movie.length ?? '').toString().trim();
+        if (lengthText) {
+            tdLength.textContent = lengthText;
+        } else {
+            tdLength.textContent = '-';
+            tdLength.classList.add('dimmed');
+        }
+
         const tdGenre = createElement('td');
         tdGenre.innerHTML = highlightSearchTerm(movie.genre, searchInput.value);
+
+        // File size (FILESIZE is MB in the database; formatSize() from
+        // analytics.js renders it as MB/GB/TB - guarded so render.js stays
+        // standalone like the rest of its helpers).
+        const tdSize = createElement('td', 'cell-size');
+        const sizeMb = parseFloat(movie.size);
+        if (!isNaN(sizeMb) && sizeMb > 0) {
+            tdSize.textContent = (typeof formatSize === 'function')
+                ? formatSize(sizeMb)
+                : Math.round(sizeMb) + ' MB';
+            tdSize.title = sizeMb + ' MB';
+        } else {
+            tdSize.textContent = '-';
+            tdSize.classList.add('dimmed');
+        }
 
         const tdRating = createElement('td');
         const ratingVal = parseFloat(movie.rating) || 0;
         const ratingText = ratingVal > 0 ? `★ ${ratingVal}` : '-';
 
         if (movie.external_url && ratingVal > 0) {
-            const link = createElement('a', '', ratingText, {
+            const link = createElement('a', 'rating-link', ratingText, {
                 href: movie.external_url,
                 target: '_blank',
                 rel: 'noopener noreferrer',
                 title: 'Open external link'
             });
-            Object.assign(link.style, { color: 'var(--accent)', textDecoration: 'none' });
             link.addEventListener('click', e => e.stopPropagation());
             tdRating.appendChild(link);
         } else {
             tdRating.textContent = ratingText;
-            if (ratingVal === 0) tdRating.style.opacity = '0.5';
+            if (ratingVal === 0) tdRating.classList.add('dimmed');
         }
 
-        // Source badge for paripakva in table view
+        // Source badge for paripakva in table view (styles in table.css)
         if (movie.source === 'paripakva') {
-            const sourceBadge = createElement('span', '', '18+');
-            Object.assign(sourceBadge.style, {
-                backgroundColor: 'purple',
-                color: '#fff',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                fontSize: '0.7rem',
-                fontWeight: '600',
-                marginLeft: '6px'
-            });
-            tdTitle.appendChild(sourceBadge);
+            tdTitle.appendChild(createElement('span', 'source-badge', '18+'));
         }
 
-        row.append(tdFav, tdNum, tdImg, tdTitle, tdCert, tdYear, tdGenre, tdRating);
+        row.append(tdFav, tdNum, tdImg, tdTitle, tdCert, tdYear, tdLength, tdGenre, tdSize, tdRating);
         row.dataset.poster = movie.poster;
         row.addEventListener('click', () => openModal(movie));
 
@@ -338,8 +415,10 @@ function renderTable(movies, append = false) {
         row.addEventListener('mousemove', (e) => moveTablePosterPreview(e));
         row.addEventListener('mouseleave', () => hideTablePosterPreview());
 
-        tbody.appendChild(row);
+        frag.appendChild(row);
     });
+
+    tbody.appendChild(frag);
 }
 
 // --- Load More Button ---
@@ -348,14 +427,13 @@ function addLoadMoreButton() {
     if (existing) existing.remove();
 
     const btn = createElement('button', 'load-more-btn', 'Load More Movies');
-    btn.style.gridColumn = '1 / -1';
     btn.addEventListener('click', () => {
         const scrollTarget = btn.offsetTop - 20;
         btn.disabled = true;
         btn.textContent = 'Loading...';
         fetchMovies(currentQuery, currentOffset, true).finally(() => {
             if (btn.parentNode) btn.remove();
-            contentArea.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+            contentArea.scrollTo({ top: scrollTarget, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         });
     });
     contentArea.appendChild(btn);

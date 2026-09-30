@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bhilam's Movie Library</title>
 
+    <!-- PWA-style browser chrome: color-scheme tells the UA how to render
+         form controls/scrollbars, theme-color is synced to the active theme
+         from ui.js (setThemeVisual) so the tab strip matches the app. -->
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#050505">
+    <meta name="description" content="Personal movie library: browse, search, filter and compare a movie collection with posters, ratings, runtimes and file details.">
+    <meta property="og:title" content="Bhilam's Movie Library">
+    <meta property="og:description" content="Browse, search, filter and compare a personal movie collection.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
     <!-- CSS (order matters: base → components → theme → responsive) -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/animations.css">
@@ -45,6 +56,10 @@
                     <option value="year_asc">Year (Oldest)</option>
                     <option value="rating_desc">Rating (Highest)</option>
                     <option value="rating_asc">Rating (Lowest)</option>
+                    <option value="length_asc">Length (Shortest)</option>
+                    <option value="length_desc">Length (Longest)</option>
+                    <option value="size_asc">Size (Smallest)</option>
+                    <option value="size_desc">Size (Largest)</option>
                 </select>
             </div>
             <div class="sort-controls limit-controls">

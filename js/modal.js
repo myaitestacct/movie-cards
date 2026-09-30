@@ -31,7 +31,6 @@ function openModal(movie) {
     // Poster
     const posterWrapper = createElement('div', 'modal-poster-wrapper');
     const posterImg = createElement('img', 'modal-img', '', { src: movie.poster, alt: movie.title });
-    posterImg.style.cursor = 'pointer';
 
     posterImg.onerror = () => {
         posterImg.onerror = null;
@@ -85,7 +84,7 @@ function openModal(movie) {
     if (movie.length) {
         const lengthSpan = createElement('span');
         lengthSpan.innerHTML = `
-            <svg class="tech-icon" width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:middle;margin-right:4px;">
+            <svg class="tech-icon" width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
@@ -99,8 +98,7 @@ function openModal(movie) {
     const rating = movie.external_url && ratingVal > 0
         ? createElement('a', 'rating-badge', ratingText, { href: movie.external_url, target: '_blank', rel: 'noopener noreferrer', title: 'Open external link' })
         : createElement('span', 'rating-badge', ratingText);
-    if (!rating.href && ratingVal === 0) rating.style.opacity = '0.5';
-    if (rating.href) rating.style.cursor = 'pointer';
+    if (!rating.href && ratingVal === 0) rating.classList.add('dimmed');
     meta.appendChild(rating);
 
     // Synopsis / director / cast
@@ -133,11 +131,11 @@ function openModal(movie) {
     const inlineRow = createElement('div', 'tech-row-inline');
 
     const resolutionItem = createElement('div', 'tech-item');
-    resolutionItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="margin-right:6px;"><rect x="2" y="4" width="20" height="14" rx="2"></rect><line x1="8" y1="20" x2="16" y2="20"></line></svg><span class="tech-value">${escapeHtml(movie.resolution) || 'N/A'}</span>`;
+    resolutionItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"></rect><line x1="8" y1="20" x2="16" y2="20"></line></svg><span class="tech-value">${escapeHtml(movie.resolution) || 'N/A'}</span>`;
     const audioItem = createElement('div', 'tech-item');
-    audioItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="margin-right:6px;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15 9a4 4 0 010 6"></path></svg><span class="tech-value">${escapeHtml(movie.audio) || 'N/A'}</span>`;
+    audioItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15 9a4 4 0 010 6"></path></svg><span class="tech-value">${escapeHtml(movie.audio) || 'N/A'}</span>`;
     const sizeItem = createElement('div', 'tech-item');
-    sizeItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 12h8"></path></svg><span class="tech-value">${escapeHtml(movie.size) || 'N/A'}</span>`;
+    sizeItem.innerHTML = `<svg class="tech-icon" width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 12h8"></path></svg><span class="tech-value">${escapeHtml(movie.size) || 'N/A'}</span>`;
 
     inlineRow.append(sizeItem, resolutionItem, audioItem);
     techSection.appendChild(inlineRow);
@@ -149,7 +147,6 @@ function openModal(movie) {
         const fileName = lastSlash >= 0 ? fullPath.slice(lastSlash + 1) : fullPath;
 
         const fileWrapper = createElement('div', 'tech-file-wrapper');
-        fileWrapper.style.marginTop = '0';
 
         const fileRow = createElement('div', 'tech-item tech-file-row');
         fileRow.innerHTML = `

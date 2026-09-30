@@ -21,6 +21,11 @@
     cursor: pointer;
     background: rgba(255,255,255,0.02);
     border: 1px solid transparent;
+    /* Skip rendering work for cards that are far off-screen: pages of 100
+       posters scroll noticeably smoother. contain-intrinsic-size is the
+       estimated card box (width height) used before first render. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px auto 480px;
 }
 
 .movie-card:hover {
@@ -68,8 +73,10 @@
 /* Poster Wrapper & Loading Shimmer */
 .poster-wrapper {
     position: relative;
-    width: 100%;
-    padding-top: var(--poster-aspect-ratio, 175%);
+    /* Modern aspect-ratio replaces the old padding-top percentage hack
+       (same visual result). --poster-aspect is "4 / 7" by default and "2 / 3"
+       once the poster-size slider has been touched (see ui.js). */
+    aspect-ratio: var(--poster-aspect, 4 / 7);
     overflow: hidden;
     border-radius: 6px;
 }
@@ -167,6 +174,15 @@
     font-weight: 600;
     transform: rotate(45deg);
     transform-origin: top left;
+    /* Archive marker: purple distinguishes it from the red default badges
+       (render.js used to paint these two colors inline per card). */
+    background-color: purple;
+    color: #fff;
+}
+
+/* Rating badges that link to an external page act clickable */
+.movie-badge.badge-link {
+    cursor: pointer;
 }
 
 /* Card Info */

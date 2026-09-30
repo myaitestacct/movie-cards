@@ -466,6 +466,13 @@ $allowedSorts = [
     'year_desc'     => 'YEAR DESC',
     'rating_asc'   => 'COALESCE(NULLIF(USERRATING, \'\'), RATING) ASC',
     'rating_desc'  => 'COALESCE(NULLIF(USERRATING, \'\'), RATING) DESC',
+    // LENGTH stores free text ("2h 30m", "90 min", "2:30") - runtimeMinutesOrderSql()
+    // parses it to minutes so sorting matches how the stats total adds runtimes.
+    // FILESIZE is a plain MB number that a CAST sorts directly.
+    'length_asc'   => runtimeMinutesOrderSql('`LENGTH`') . ' ASC',
+    'length_desc'  => runtimeMinutesOrderSql('`LENGTH`') . ' DESC',
+    'size_asc'     => 'CAST(FILESIZE AS DECIMAL(12,2)) ASC',
+    'size_desc'    => 'CAST(FILESIZE AS DECIMAL(12,2)) DESC',
 ];
 
 if (!array_key_exists($sort, $allowedSorts)) {
@@ -612,26 +619,45 @@ if (!empty($certifications)) {
 
 $whereClause = implode(' AND ', $conditions);
 
-$sql = "SELECT $movieColumns
-        FROM $tableToQuery
-        WHERE $whereClause
-        ORDER BY $orderBy 
-        LIMIT :limit OFFSET :offset";
+// Runtime sorting parses LENGTH in SQL (see runtimeMinutesOrderSql()), which
+// needs REGEXP_SUBSTR (MySQL 8+ / MariaDB 10+). On older servers the statement
+// itself fails, so the sort degrades to a numeric prefix sort instead of
+// taking the whole listing down.
+$orderAttempts = [$orderBy];
+if ($sort === 'length_asc' || $sort === 'length_desc') {
+    $orderAttempts[] = 'CAST(`LENGTH` AS UNSIGNED)' . ($sort === 'length_asc' ? ' ASC' : ' DESC');
+}
 
 try {
-    $stmt = $pdo->prepare($sql);
-    bindListQueryParams($stmt, $searchTerm, $category, $favBindings, $advancedBindings);
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-    
-    $stmt->execute();
-    $rows = $stmt->fetchAll();
-    
+    $rows = null;
+    $lastError = null;
+    foreach ($orderAttempts as $orderClause) {
+        $sql = "SELECT $movieColumns
+                FROM $tableToQuery
+                WHERE $whereClause
+                ORDER BY $orderClause
+                LIMIT :limit OFFSET :offset";
+        try {
+            $stmt = $pdo->prepare($sql);
+            bindListQueryParams($stmt, $searchTerm, $category, $favBindings, $advancedBindings);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            break;
+        } catch (\PDOException $e) {
+            $lastError = $e; // fall through to the next ORDER BY attempt (if any)
+        }
+    }
+
+    if ($rows === null) {
+        throw $lastError;
+    }
+
     // ===== PAGINATION LOGIC =====
     $returnedCount = count($rows);
     // Provisional answer: the exact one is computed from the COUNT(*) below.
     $hasMore = ($returnedCount === $limit);
-    
 } catch (\PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Query failed']);
@@ -719,6 +745,26 @@ function parseRuntimeMinutes(string $length): int
     }
 
     return 0;
+}
+
+/**
+ * SQL expression mirroring parseRuntimeMinutes(): "2h 30m" / "2h30m" / "2h" /
+ * "90 min" / "2:30" -> minutes, so runtime sorting agrees with how the stats
+ * total adds runtimes. Needs REGEXP_SUBSTR (MySQL 8+ / MariaDB 10+); the
+ * listing query falls back to CAST(`LENGTH` AS UNSIGNED) on older servers.
+ * NULL or unparseable values sort as 0.
+ */
+function runtimeMinutesOrderSql(string $column): string
+{
+    return "(CASE
+        WHEN $column REGEXP '[0-9]\\\\s*h' THEN
+            60 * CAST(REGEXP_SUBSTR($column, '[0-9]+') AS UNSIGNED)
+            + COALESCE(CAST(SUBSTRING_INDEX(REGEXP_SUBSTR($column, 'h\\\\s*[0-9]+'), 'h', -1) AS UNSIGNED), 0)
+        WHEN $column REGEXP '^[0-9]+\\\\s*:' THEN
+            60 * CAST(SUBSTRING_INDEX($column, ':', 1) AS UNSIGNED)
+            + CAST(SUBSTRING_INDEX($column, ':', -1) AS UNSIGNED)
+        ELSE COALESCE(CAST($column AS UNSIGNED), 0)
+    END)";
 }
 
 /**

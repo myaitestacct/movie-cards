@@ -73,6 +73,37 @@ function isTypingTarget() {
     return el === searchInput || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
+// --- Does the OS ask for reduced motion? (animations.css also honors it) ---
+function prefersReducedMotion() {
+    return !!(window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// --- Count up plain-numeric .stat-value elements (stats bar polish) ---
+// Only touches elements whose content is a bare number ("1,234"), so the
+// starred/labelled stats (⭐ 7.2, ⏱ 5d 4h, genre names) are left alone.
+function animateStatNumbers(scope) {
+    if (!scope || prefersReducedMotion()) return;
+
+    scope.querySelectorAll('.stat-value').forEach(el => {
+        const match = (el.textContent || '').trim().match(/^[0-9][0-9,]*$/);
+        if (!match) return;
+
+        const target = parseInt(match[0].replace(/,/g, ''), 10);
+        if (!isFinite(target) || target <= 0) return;
+
+        const duration = 700;
+        const start = performance.now();
+        const step = now => {
+            const t = Math.max(0, Math.min(1, (now - start) / duration));
+            const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+            el.textContent = Math.round(target * eased).toLocaleString();
+            if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+}
+
 // --- Toast Notifications ---
 function showToast(message, type = 'info', duration = 3000) {
     var container = document.getElementById('toast-container');

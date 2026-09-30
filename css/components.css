@@ -343,6 +343,13 @@ body.analytics-open .stat-growth .stat-label {
     font-size: 0.8rem;
     transition: all 0.3s ease;
     box-shadow: none;
+    /* Span the full row in both the grid and the list table */
+    grid-column: 1 / -1;
+}
+
+/* Utility: de-emphasize empty/absent values (table cells, modal badges) */
+.dimmed {
+    opacity: 0.5;
 }
 
 .load-more-btn:hover:not(:disabled) {
@@ -993,4 +1000,33 @@ body.light-theme mark.search-highlight {
 body.table-view .poster-size-control {
     opacity: 0.5;
     pointer-events: none;
+}
+/* ============================================
+   MICRO-INTERACTIONS: button press feedback
+   Buttons subtly shrink while pressed. Applies to
+   every interactive control across the app; buttons
+   that already define their own :active transform
+   are unaffected (this list avoids those).
+   ============================================ */
+.view-toggle:active,
+.adv-filters-toggle:active,
+.nav-action-btn:active,
+.theme-toggle:active,
+.load-more-btn:active,
+.seg-btn:active,
+.genre-chip:active,
+.decade-chip:active,
+.jump-letter-btn:active,
+.jump-decade-btn:active,
+.qj-step-btn:active,
+.qj-go-btn:active,
+.qj-reset-btn:active,
+.adv-filters-btn-primary:active,
+.adv-filters-btn-secondary:active,
+.fav-btn:active,
+.compare-card-btn:active,
+.collapse-toggle:active,
+.copy-file-btn:active,
+.back-to-top-btn:active {
+    transform: scale(0.94);
 }

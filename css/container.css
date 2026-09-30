@@ -31,6 +31,22 @@
     background: rgba(255,255,255,0.3);
 }
 
+/* Global slim scrollbars. scrollbar-color/width are inherited, so setting
+   them once on <html> covers the container, modal, filter panels and any
+   nested scroll area. In engines that support scrollbar-color these take
+   precedence over the ::-webkit-scrollbar rules above; older Chromium keeps
+   using them, so both stay in sync visually. */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+/* Reserve the scrollbar gutter even when content doesn't overflow yet, so
+   loading a batch of movies doesn't shift the layout sideways. */
+.container {
+    scrollbar-gutter: stable;
+}
+
 /* Search Results Count */
 #search-results-count {
     margin-top: 40px;

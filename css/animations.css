@@ -69,3 +69,27 @@
     from { opacity: 0; transform: scale(0.9); }
     to   { opacity: 1; transform: scale(1); }
 }
+
+/* Grid <-> List switch crossfade. ui.js/app.js re-add the .view-fade class
+   (after forcing a reflow) so the animation restarts on every switch. */
+@keyframes viewFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.view-fade {
+    animation: viewFade 0.28s ease;
+}
+
+/* Respect the OS "reduce motion" setting: kill decorative animation and
+   smooth scrolling for users who are sensitive to motion. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

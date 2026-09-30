@@ -32,6 +32,48 @@
     cursor: pointer;
 }
 
+/* Click-to-sort column headers (render.js attaches data-sort to the
+   sortable ones). The arrow span is injected by render.js. */
+.movie-table th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.movie-table th[data-sort]:hover,
+.movie-table th[data-sort]:focus-visible {
+    color: var(--text-main);
+    outline: none;
+}
+
+.movie-table th.sorted {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.movie-table th .sort-arrow {
+    font-size: 0.65em;
+    margin-left: 4px;
+    opacity: 0.9;
+}
+
+/* External rating link inside the Rating column */
+.movie-table .rating-link {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* Archive (18+) tag inside the Title column */
+.movie-table .source-badge {
+    background-color: purple;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
 .table-poster {
     width: 40px;
     height: 60px;

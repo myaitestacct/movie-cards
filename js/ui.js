@@ -20,10 +20,20 @@ function updateViewToggleButton() {
     }
 }
 
+// Crossfade the content area when switching Grid <-> List (see .view-fade in
+// animations.css). Restarted by forcing a reflow so the animation replays.
+function playViewTransition() {
+    if (prefersReducedMotion()) return;
+    contentArea.classList.remove('view-fade');
+    void contentArea.offsetWidth; // reflow restarts the animation
+    contentArea.classList.add('view-fade');
+}
+
 btnViewToggle.addEventListener('click', () => {
     currentView = currentView === 'grid' ? 'list' : 'grid';
     updateViewToggleButton();
     updatePosterSizeControlState();
+    playViewTransition();
     fetchMovies(searchInput.value, 0, false);
 });
 
@@ -40,8 +50,9 @@ const POSTER_SIZE_KEY = 'movie_poster_size';
 function applyPosterSize(size) {
     // Set the minimum width for grid columns
     document.documentElement.style.setProperty('--poster-min-width', size + 'px');
-    // Calculate aspect ratio (2:3 ratio, so 150% for portrait posters)
-    document.documentElement.style.setProperty('--poster-aspect-ratio', '150%');
+    // Poster aspect as a modern aspect-ratio value (2:3 portrait);
+    // cards.css consumes it via var(--poster-aspect).
+    document.documentElement.style.setProperty('--poster-aspect', '2 / 3');
 }
 
 // Load saved poster size or use default
@@ -72,6 +83,10 @@ const btnTheme = document.getElementById('btn-theme');
 const iconMoon = btnTheme.querySelector('.icon-moon');
 const iconSun = btnTheme.querySelector('.icon-sun');
 
+// <meta name="theme-color"> paints the browser tab strip / Android status
+// bar; keeping it in sync with the active theme makes the switch feel native.
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
 // Set the visual theme without necessarily saving to localStorage
 function setThemeVisual(theme) {
     if (theme === 'light') {
@@ -82,6 +97,9 @@ function setThemeVisual(theme) {
         document.body.classList.remove('light-theme');
         iconMoon.style.display = '';
         iconSun.style.display = 'none';
+    }
+    if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', theme === 'light' ? '#f0f0f0' : '#050505');
     }
 }
 
@@ -125,7 +143,7 @@ backToTopBtn.innerHTML = `
 `;
 backToTopBtn.title = 'Back to top';
 backToTopBtn.addEventListener('click', () => {
-    contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    contentArea.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 });
 document.body.appendChild(backToTopBtn);
 
